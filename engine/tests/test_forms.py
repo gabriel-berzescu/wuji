@@ -35,18 +35,26 @@ def test_every_form_is_made_of_valid_intentions(body):
             if op == "intend":
                 cue = args.get("breath")
                 assert cue in (None, "inhale", "exhale"), (name, cue)
-                body.intend(**{k: v for k, v in args.items() if k not in ("breath", "say")})
+                if cue is not None:  # the breath lasts the movement's slot, never less than the movement
+                    assert args["breath_over"] >= args["over"], (name, args)
+                body.intend(**{k: v for k, v in args.items() if k not in ("breath", "breath_over")})
             elif op == "tension":
                 body.set_tension(args["region"], args["level"])
-            elif op == "announce":
+            elif op in ("announce", "say"):
                 assert args["text"], name
             else:
                 assert op == "breathe" and args["pattern"] in ("natural", "abdominal", "reverse", "hold")
-    # each brocade is announced, and its movements speak with their breath
+        assert [t for t, _, _ in steps] == sorted(t for t, _, _ in steps), name  # played in order
+    # each brocade is announced, and its movements speak with their breath, once each, while under way
     assert sum(op == "announce" for _, op, _ in FORMS["ba_duan_jin"]) == 8
-    spoken = [a for _, op, a in FORMS["ba_duan_jin"] if op == "intend" and a.get("say")]
-    assert len(spoken) > 50 and all(a.get("breath") in ("inhale", "exhale") for a in spoken)
-    assert _length(FORMS["ba_duan_jin"]) > 240  # all eight, about five minutes
+    spoken = [(t, a) for t, op, a in FORMS["ba_duan_jin"] if op == "say"]
+    assert len(spoken) > 60 and all(a["breath"] in ("inhale", "exhale") for _, a in spoken)
+    starts = {t for t, op, a in FORMS["ba_duan_jin"] if op == "intend" and a.get("breath")}
+    assert not starts & {t for t, _ in spoken}  # never at the very start of the movement
+    assert _length(FORMS["ba_duan_jin"]) > 270  # all eight, five or six minutes
+    # the bounce goes at the breath's pace: seven rises in about a minute, not fifteen seconds
+    rises = [t for t, op, a in FORMS["bounce"] if op == "intend" and a.get("rise") == 1.0]
+    assert len(rises) == 7 and 7.0 <= np.diff(rises).min()
     # every movement of a brocade (past its setting up) is led by its breath
     from wuji.forms import BROCADES
     for form in BROCADES:
@@ -97,3 +105,21 @@ def test_folding_forward_lowers_the_head_and_keeps_the_weight_over_the_feet(body
     assert set(sol.grf) == {"left", "right"}
     body.intend(bend=0.0, over=2)
     settle(body, 2.5)
+
+
+def test_in_the_full_fold_the_back_lets_go(body):
+    """Flexion-relaxation: near the end of the lumbar range its ligaments and fascia carry the trunk, the back muscles
+    go nearly quiet; halfway down they still work."""
+    from wuji.senses import region_effort
+    back = lambda s: region_effort(s.act, body.a.f0, body.a.muscle_region == "lower_back")
+    body.reset()
+    settle(body, 3.5)
+    body.intend(bend=0.5, arms="hang", over=2)
+    half = settle(body, 3.0)
+    body.intend(bend=1.0, over=2)
+    full = settle(body, 3.0)
+    assert body.lumbar_flexion() > 40 and body.lumbar_passive() > 40  # degrees; N m
+    assert back(full) < 0.5 * back(half) and back(full) < 0.2
+    body.intend(bend=0.0, over=2)
+    settle(body, 2.5)
+    assert body.lumbar_passive() < 1  # upright, the back of the spine is slack

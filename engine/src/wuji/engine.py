@@ -134,12 +134,13 @@ class Engine:
                 self.event("form", {"name": f["name"], "step": f["next"], "of": len(steps), "done": False,
                                     "text": args["text"]}, every=0.0)
                 continue
-            if op == "intend" and args.get("say"):  # a movement, with its breath: the practitioner is called at each
+            if op == "say":  # a movement under way, with its breath: the practitioner is called at each
                 cue = {"inhale": "In, ", "exhale": "Out, "}.get(args.get("breath"), "")
-                say = cue + args["say"] if cue else args["say"][0].upper() + args["say"][1:]
+                say = cue + args["text"] if cue else args["text"][0].upper() + args["text"][1:]
                 self.event("form", {"name": f["name"], "step": f["next"], "of": len(steps), "done": False,
                                     "breath": args.get("breath"), "text": say + "."}, every=0.0)
-            self.apply(op, {k: v for k, v in args.items() if k != "say"})
+                continue
+            self.apply(op, args)
         if f["next"] >= len(steps) and not self.body.moving:
             self.event("form", {"name": f["name"], "step": len(steps), "of": len(steps), "done": True,
                                 "text": f"The form {f['name'].replace('_', ' ')} is complete."}, every=0.0)
@@ -152,9 +153,9 @@ class Engine:
         if op == "intend":
             led = ""
             if args.get("breath") is not None:  # breath-led: the breath phase begins with the movement and lasts as long
-                if self.breath is None:
+                if self.breath is None:  # (or breath_over seconds, when the movement is quicker than its breath)
                     raise ValueError("the breath is not modelled in this build")
-                led = " " + self.breath.cue(args["breath"], float(args.get("over", 3.0)))
+                led = " " + self.breath.cue(args["breath"], float(args.get("breath_over", args.get("over", 3.0))))
             return led.strip() + (" " if led else "") + b.intend(stance=args.get("stance"), weight=args.get("weight"), sink=args.get("sink"),
                             arms=args.get("arms"), tailbone=args.get("tailbone"), arm_left=args.get("arm_left"),
                             arm_right=args.get("arm_right"), bend=args.get("bend"), twist=args.get("twist"),

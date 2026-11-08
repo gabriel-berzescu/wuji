@@ -8,6 +8,7 @@ Quiet standing is never still: the centre of mass wanders a few millimetres, and
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import mujoco
@@ -22,6 +23,20 @@ from .posture import ARMS, RISE_MAX, STANCES, TRUNK_MAX, Posture, PostureSolver,
 # 1997 measured the moment it can make; Hodges, Eriksson, Shirley and Gandevia 2005 its effect on spinal stiffness).
 IAP_MOMENT = 0.15  # N m per cmH2O above PAB_REST
 PAB_REST = 8.0
+
+# The back of the lumbar spine resists folding: its ligaments (supraspinous, interspinous, the ligamenta flava, the
+# capsules), the thoracolumbar fascia, the discs, and the stretched back muscles' own connective tissue. Little at first,
+# steeply near the end of the range: near full flexion they carry the trunk and the back muscles fall silent (the
+# flexion-relaxation phenomenon: Floyd and Silver 1955; McGill and Kippers 1994; Dolan, Mannion and Adams 1994, who put
+# the passive share of the extensor moment at full flexion near 100 N m). The model's muscles have almost none of this
+# (MuJoCo's passive curve gives about 2% of a muscle's strength at the end of the joint range), and no ligaments, so it
+# is added here as one passive element, the same moment across each lumbar level:
+#   M = A (exp(B x) - 1), x = lumbar flexion (L1-S1) / its standing maximum;
+# about 10 N m at half the range, 45 at four fifths, 120 at full flexion.
+LUMBAR_FE = ("flex_extension", "L4_L5_FE", "L3_L4_FE", "L2_L3_FE", "L1_L2_FE")
+LUMBAR_FLEX_MAX = 55.0  # degrees, L1-S1 in standing full flexion
+LUMBAR_PASSIVE = (1.49, 4.4)  # A (N m), B
+LUMBAR_FULL = LUMBAR_PASSIVE[0] * (math.exp(LUMBAR_PASSIVE[1]) - 1.0)  # N m at full flexion
 
 TENSION_FLOOR = 0.15  # activation a fully held region keeps (co-contraction), on top of what the posture needs
 FOOT_LIFT = 0.06  # how high a stepping foot rises (m)
@@ -230,6 +245,24 @@ class Body:
         out[self.a.dadr["flex_extension"]] = IAP_MOMENT * max(0.0, self.abdominal_pressure - PAB_REST)
         return out
 
+    def lumbar_flexion(self) -> float:
+        """How far the lumbar spine is folded, L1 to the sacrum (degrees, flexion positive)."""
+        return -float(np.degrees(sum(self.q[self.a.qadr[j]] for j in LUMBAR_FE)))
+
+    def lumbar_passive(self) -> float:
+        """The extension moment the back of the lumbar spine gives as it is folded (N m, at each level)."""
+        a, b = LUMBAR_PASSIVE
+        x = max(0.0, self.lumbar_flexion()) / LUMBAR_FLEX_MAX
+        return a * (np.exp(b * min(x, 1.2)) - 1.0)
+
+    def external_support(self) -> np.ndarray:
+        """What holds the spine besides the muscles, as generalised forces: the belly's pressure and the posterior tissues."""
+        out = self.abdominal_support()
+        moment = self.lumbar_passive()
+        for j in LUMBAR_FE:
+            out[self.a.dadr[j]] += moment
+        return out
+
     def breath_shaping(self) -> tuple[float, float]:
         """How the body shapes the breath now: (belly compression, 0..1, from folding forward; rib opening, 0..1, from
         the arms raised overhead)."""
@@ -242,7 +275,7 @@ class Body:
         """Who carries the load right now (a few times a second)."""
         qacc = (self.qvel - self.qvel_prev) / max(dt, 1e-3)
         floor = np.array([TENSION_FLOOR * self.tension[r] for r in self.a.muscle_region])
-        external = self.abdominal_support()
+        external = self.external_support()
         solution = self.muscles.solve(self.q, self.qvel, qacc, floor=floor, loaded=getattr(self, "loaded", None),
                                       external=external)
         if not solution.ok and self.solution is not None:

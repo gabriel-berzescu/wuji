@@ -86,7 +86,7 @@ Claude ── MCPL host (e.g. mcpl-cc-bridge) ── server/ (Node, MCPL) ──
 | `intend` | Move: `stance` (wuji, horse), `weight` (share on the left foot), `sink` (0..1), `tailbone` (0..1), `arms` or one arm (`arm_left`, `arm_right`: hang, embrace, lift_sky, press_down, bow_extend, bow_pull, punch, fist_waist, earth_press, owl, hands_thighs), the trunk (`bend`, `twist`, `side_bend`), `rise` onto the toes, `over` (seconds). |
 | `tension` | Hold or release tension in a region (feet, calves, thighs, hips, lower_back, belly, shoulders, arms, hands, or all). |
 | `breathe` | `natural`, `abdominal`, `reverse` or `hold`; optionally paced (`inhale`, `exhale`, `pause` seconds); through the nose or the mouth. |
-| `form` | Play a form: `wuji`; `embrace_tree` (zhan zhuang, standing like a tree holding a ball); the Eight Brocades one by one (`lift_sky`, `draw_bow`, `separate`, `owl`, `sway_tail`, `hold_feet`, `fists`, `bounce`); or `ba_duan_jin`, all eight in order, about five minutes. |
+| `form` | Play a form: `wuji`; `embrace_tree` (zhan zhuang, standing like a tree holding a ball); the Eight Brocades one by one (`lift_sky`, `draw_bow`, `separate`, `owl`, `sway_tail`, `hold_feet`, `fists`, `bounce`); or `ba_duan_jin`, all eight in order, about five and a half minutes. |
 | `reset` | Back to wuji: feet hip-width, knees soft, arms hanging, everything released. |
 | `viewer` | Opens a page where someone can watch the practice (see Watching); returns its URL. |
 

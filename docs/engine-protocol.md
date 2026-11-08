@@ -92,6 +92,7 @@ Where the body should go, and how fast. Every field is optional; a field left ou
   "side_bend": 0.0,
   "rise": 0.0,
   "breath": "inhale" | "exhale",
+  "breath_over": 4.0,
   "head": "suspended" | "tucked" | "turned_left" | "turned_right",
   "tailbone": 0.5,
   "over": 4.0
@@ -102,7 +103,8 @@ Where the body should go, and how fast. Every field is optional; a field left ou
 - `sink`: how deep the knees bend, 0 (straight) .. 1 (the deepest the stance allows).
 - `arms` sets both arms (and clears a one-arm shape); `arm_left` / `arm_right` set one arm alone.
 - `breath`: breath-led movement. That phase of the breath begins now, with the movement, and lasts `over` seconds, as deep
-  as the pace needs; between cues the breath keeps that pace. The forms cue every movement.
+  as the pace needs; between cues the breath keeps that pace. The forms cue every movement. `breath_over`: how long the
+  breath phase lasts when the movement is quicker than its breath (the heels drop in a moment, the out-breath goes on).
 - `bend`: the trunk folding forward at the waist and hips, 0 .. 1 (about 100°). `twist`: turning, -1 .. 1, positive to the
   left (about 40°; the head turns with the chest, as this body has no neck joints). `side_bend`: leaning, -1 .. 1, positive
   to the left (about 20°). `rise`: up on the toes, 0 .. 1 (heels about 22° up, the weight carried forward over the balls of
@@ -135,9 +137,10 @@ what the posture needs. Regions: `feet`, `calves`, `thighs`, `hips`, `lower_back
 
 `{"name": ...}` plays a named sequence of intentions (`engine/src/wuji/forms.py`): `wuji` (settle), `embrace_tree` (zhan
 zhuang), the Eight Brocades one by one (`lift_sky`, `draw_bow`, `separate`, `owl`, `sway_tail`, `hold_feet`, `fists`,
-`bounce`), or `ba_duan_jin`, all eight in order (about five minutes). → `{"accepted": true, "steps": 4, "text":
+`bounce`), or `ba_duan_jin`, all eight in order (about five and a half minutes). → `{"accepted": true, "steps": 4, "text":
 "..."}`. Progress arrives as `form` events: each part announced as it begins, then each movement with its breath
-(`"Out, drawing the bow to the left, the eyes on the raised finger."`), about sixty in the Eight Brocades.
+(`"Out, drawing the bow to the left, the eyes on the raised finger."`), 66 in the Eight Brocades. A movement calls halfway
+through, when it is under way, so the felt sense that comes with the call is the movement's own.
 
 ### `reset`
 
@@ -163,7 +166,7 @@ are documented in `engine/src/wuji/viewer.py`. The page loads three.js from a CD
 |---|---|---|
 | `balance` | the centre of pressure nears the edge of the support, a foot unloads, or sway grows | `severity` (`notice`, `warning`), `text` |
 | `breath` | the urge to breathe rises during a hold (CO₂), or the breath settles again | `kind` (`urge`, `settled`), `urge` 0..1, `text` |
-| `form` | a part of a form begins ("Two hands hold up the heavens: ..."), a movement begins with its breath ("In, the arms rise to hold up the heavens."), or the form ends | `name`, `step`, `of`, `done`, `text`; `breath` (`inhale`, `exhale`) for a movement |
+| `form` | a part of a form begins ("Two hands hold up the heavens: ..."), a movement is under way, with its breath ("In, the arms rise to hold up the heavens."), or the form ends | `name`, `step`, `of`, `done`, `text`; `breath` (`inhale`, `exhale`) for a movement |
 | `strain` | a posture cannot be held without excessive effort (the solver needs large residual forces) | `text` |
 
 Events are the body asking for attention, not a stream of state: outside a form a few per minute at most. A form calls at
