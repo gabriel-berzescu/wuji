@@ -253,7 +253,9 @@ def test_nasal_cycle_dominant_side_carries_more_flow():
         sides.add(dom)
         flows = [(abs(s["nostrils"][dom]["flow_lps"]), abs(s["nostrils"][other]["flow_lps"]))
                  for s in states if abs(s["flow_lps"]) > 0.2]
-        assert sum(a for a, _ in flows) > 1.5 * sum(b for _, b in flows)
+        # a gentle cycle: the dominant side carries a few percent more of the air, not most of it
+        ratio = sum(a for a, _ in flows) / sum(b for _, b in flows)
+        assert 1.02 < ratio < 1.15
         # the cycle runs over hours: an hour barely changes it
         b = Breath(seed)
         o0 = b.state()["nostrils"][dom]["openness"]

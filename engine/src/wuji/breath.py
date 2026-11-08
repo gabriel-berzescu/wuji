@@ -32,7 +32,8 @@ Rhythm
 Nose
     Each nostril's conductance grows with the square of its openness; the nasal cycle (Kayser 1895; Hasegawa and Kern
     1977; Eccles 2000) makes one side dominant, chosen by the seed, swinging over a period of 3-6 hours, so within a
-    session it barely moves. Effort decongests both sides. Above about 35 L/min the mouth opens as well (the oronasal
+    session it barely moves. Its strength varies widely between people, and many barely notice it; Wuji's is gentle
+    (NASAL_SWING: openness differs by about 2 %, so the dominant side carries a few percent more of the air). Effort decongests both sides. Above about 35 L/min the mouth opens as well (the oronasal
     switch, Niinimaa et al. 1980). Air at the nostril: near room temperature (22 C) on the inhale, 32-34 C on the exhale
     (Keck et al. 2000), drifting toward 30 C when still, with a sensor-like lag of 0.25 s.
 
@@ -93,6 +94,8 @@ import math
 import numpy as np
 
 PATTERNS = ("natural", "abdominal", "reverse", "hold")
+
+NASAL_SWING = 0.015  # how far the nasal cycle moves each nostril's openness from 0.6 (0.22 would be a strong cycle)
 
 # mechanics
 FRC_L = 2.8                 # functional residual capacity, standing
@@ -429,7 +432,7 @@ class Breath:
             act += 0.25 * (self._urge - 0.6) / 0.4 * max(0.0, math.sin(2 * math.pi * self._hold_t / period)) ** 4
         # nostrils
         phase = self._nc_phase + self._nc_omega * self.t
-        swing = 0.22 * math.cos(phase)
+        swing = NASAL_SWING * math.cos(phase)
         decong = 0.15 * self._effort
         o_l = _clip(0.6 + swing + decong, 0.1, 1.0)
         o_r = _clip(0.6 - swing + decong, 0.1, 1.0)
@@ -590,7 +593,8 @@ class Breath:
         f_l, f_r = (abs(f) for f in m["flows"])
         side = "left" if f_l > f_r else "right"
         lop = abs(f_l - f_r) / max(f_l + f_r, 1e-9)
-        where = f"mostly in the {side} nostril" if lop > 0.2 else "even in both nostrils"
+        where = (f"mostly in the {side} nostril" if lop > 0.2 else f"a little more in the {side} nostril" if lop > 0.03
+                 else "even in both nostrils")
         if ph in ("hold", "pause") or abs(self._flow) < 0.03:
             lines.append("No air moves at the nose." if share > 0 else "No air moves; the mouth rests open.")
         elif share == 0.0:
