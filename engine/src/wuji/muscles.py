@@ -5,12 +5,15 @@ switched off so nothing is hidden in them). A quadratic programme (OSQP) then fi
 
 - the activation of each of the 416 muscles, between what the practitioner holds (tension) and 1,
 - the ground's force at each loaded point of the soles, inside a friction pyramid,
+- the force between each palm and its thigh when the hands rest on the thighs (an internal contact: equal and opposite on
+  the hand and the femur at the same point, pushing only, inside a friction pyramid around the thigh's surface normal), so
+  the arms can carry part of the trunk when it leans on them,
 - reserve forces for anything the muscles cannot do (heavily penalised: their size says how strained the posture is),
 
 The joint couplings (the vertebrae following the lumbar spine, the shoulder rhythm, the patellae) are folded into the
 equations rather than given force variables: everything is expressed in the independent coordinates, so a force on a coupled
 joint reaches the joint that drives it through the coupling's slope (q_dot = T q_dot_independent; the equations are T^T(...)).
-Ground forces are solved in hectonewtons, so all the variables have similar sizes and the solver converges quickly.
+Contact forces are solved in hectonewtons, so all the variables have similar sizes and the solver converges quickly.
 
 minimising the sum of squared activations (the classic physiological criterion, Crowninshield & Brand 1981; also qigong's
 song: no more effort than the posture needs) plus a little change from the last moment (activation is not instantaneous).
@@ -29,6 +32,7 @@ from scipy import sparse
 from .anatomy import Anatomy
 
 MU = 0.9  # sole friction
+MU_HAND = 0.6  # a palm on the thigh: skin on cloth
 
 
 @dataclass
@@ -36,6 +40,7 @@ class Solution:
     act: np.ndarray  # activations (nu)
     force: np.ndarray  # muscle forces, N (positive = pulling)
     grf: dict  # foot -> {"force": world N (3,), "cop": world point (3,)} (absent when the foot bears nothing)
+    hands: dict  # side -> {"force": world N (3,), the thigh's push on the palm, "point": world (3,)} (absent: not resting)
     root_residual: float  # N or N m: what had to hold the body up besides muscles and ground (should be ~0)
     joint_residual: float  # largest reserve torque on a joint, N m
     effort: float  # mean squared activation
@@ -45,10 +50,10 @@ class Solution:
 class MuscleSolver:
     W_ACT = 1.0
     W_SMOOTH = 0.5
-    W_FORCE = 1e-3  # per hN squared: just enough to spread the load over the sole
+    W_FORCE = 1e-3  # per hN squared: just enough to spread the load over the sole (the palms' pressing costs muscle anyway)
     W_ROOT = 1e2
     W_RESERVE = 1.0
-    F_UNIT = 100.0  # ground forces are solved in hectonewtons
+    F_UNIT = 100.0  # contact forces are solved in hectonewtons
 
     def __init__(self, anatomy: Anatomy) -> None:
         self.a = anatomy
@@ -85,10 +90,11 @@ class MuscleSolver:
         return np.array([rows[v] for v in range(m.nv)])
 
     def solve(self, qpos: np.ndarray, qvel: np.ndarray, qacc: np.ndarray, floor: np.ndarray | None = None,
-              loaded: dict | None = None, external: np.ndarray | None = None) -> Solution:
+              loaded: dict | None = None, external: np.ndarray | None = None, hands: dict | None = None) -> Solution:
         """floor: per-muscle lower bound on activation (tension held). loaded: foot -> True (on the ground), "forefoot"
         (on tiptoe) or False (lifted). external: generalised forces (nv) acting besides muscles and ground, which the
-        muscles then need not provide (the abdominal pressure's extension moment on the lumbar spine)."""
+        muscles then need not provide (the abdominal pressure's extension moment on the lumbar spine). hands: side -> True
+        when that palm rests on its thigh and can press on it."""
         m, d, a = self.m, self.d, self.a
         nu, nv = m.nu, m.nv
         d.qpos[:], d.qvel[:], d.qacc[:] = qpos, qvel, qacc
@@ -125,13 +131,33 @@ class MuscleSolver:
             worlds.append(w)
         nc = len(pts)
 
+        # hands on the thighs: the thigh pushes the palm (J_hand^T f) and the palm the thigh (-J_femur^T f), at the palm;
+        # the normal points out of the thigh, from the femur's axis through the palm; one tangent runs along the thigh
+        rests, hjacs, hpoints, frames = [], [], [], []
+        jf = np.zeros((3, nv))
+        for side in ("left", "right"):
+            if not (hands or {}).get(side):
+                continue
+            p = a.palm[side]
+            w = d.xpos[p.hand] + d.xmat[p.hand].reshape(3, 3) @ p.local
+            mujoco.mj_jac(m, d, jp, None, w, p.hand)
+            mujoco.mj_jac(m, d, jf, None, w, p.femur)
+            R = d.xmat[p.femur].reshape(3, 3)
+            radial = R.T @ (w - d.xpos[p.femur]) * np.array([1.0, 0.0, 1.0])
+            rests.append(side)
+            hjacs.append(jp - jf)
+            hpoints.append(w)
+            nrm = R @ radial / max(np.linalg.norm(radial), 1e-9)
+            frames.append((nrm, R[:, 1], np.cross(nrm, R[:, 1])))
+        nh = len(rests)
+
         # everything in the independent coordinates: T^T (A_mus a + Jc^T f + ...) + r = T^T (tau - b_mus)
         T = self._reduction(qpos)
         nr = T.shape[1]
-        # variables: [a (nu), f in hN (3 nc), r (nr)]
-        nf = 3 * nc
+        # variables: [a (nu), f in hN (3 nc soles, then 3 nh palms), r (nr)]
+        nf = 3 * (nc + nh)
         n = nu + nf + nr
-        Jc = np.hstack([J.T for J in jacs]) * self.F_UNIT if nc else np.zeros((nv, 0))
+        Jc = np.hstack([J.T for J in jacs + hjacs]) * self.F_UNIT if nc + nh else np.zeros((nv, 0))
         A_eq = sparse.hstack([sparse.csc_matrix(T.T @ A_mus), sparse.csc_matrix(T.T @ Jc), sparse.identity(nr)])
         rhs = T.T @ (tau - b_mus - (external if external is not None else 0.0))
 
@@ -149,6 +175,16 @@ class MuscleSolver:
             rows.append(fr.tocsc())
             lo.append(np.tile([0, -np.inf, -np.inf, -np.inf, -np.inf], nc))
             hi.append(np.tile([np.inf, 0, 0, 0, 0], nc))
+        if nh:  # the palms: the same pyramid, around each thigh's normal, with an edge along the thigh
+            fr = sparse.lil_matrix((5 * nh, n))
+            for k, (nrm, t1, t2) in enumerate(frames):
+                c = nu + 3 * (nc + k)
+                for row, v in enumerate((nrm, t1 - MU_HAND * nrm, -t1 - MU_HAND * nrm, t2 - MU_HAND * nrm,
+                                         -t2 - MU_HAND * nrm)):
+                    fr[5 * k + row, c:c + 3] = v
+            rows.append(fr.tocsc())
+            lo.append(np.tile([0, -np.inf, -np.inf, -np.inf, -np.inf], nh))
+            hi.append(np.tile([np.inf, 0, 0, 0, 0], nh))
         # activation bounds
         rows.append(sparse.hstack([sparse.identity(nu), sparse.csc_matrix((nu, n - nu))]))
         lo.append(np.zeros(nu) if floor is None else np.clip(floor, 0, 1))
@@ -182,6 +218,7 @@ class MuscleSolver:
             fz = f[idx, 2]
             cop = (np.array(worlds)[idx] * fz[:, None]).sum(axis=0) / max(fz.sum(), 1e-9)
             grf[foot] = {"force": F, "cop": cop}
+        palms = {side: {"force": f[nc + k], "point": hpoints[k]} for k, side in enumerate(rests)}
         force = -(gain * act + bias)
-        return Solution(act=act, force=force, grf=grf, root_residual=float(np.linalg.norm(r[:6])),
+        return Solution(act=act, force=force, grf=grf, hands=palms, root_residual=float(np.linalg.norm(r[:6])),
                         joint_residual=float(np.abs(r[6:]).max()), effort=float(np.mean(act ** 2)), ok=ok)

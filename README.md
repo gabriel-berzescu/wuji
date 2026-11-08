@@ -31,11 +31,13 @@ bones: the feet stay planted, the pelvis and chest stay level and upright, the c
 be. A change of stance is a real step: the weight goes onto one leg, the other foot lifts, travels and lands.
 
 **Who does the work.** Several times a second, inverse dynamics gives the forces the movement needs, and a quadratic programme
-finds the activations of all 416 muscles, the ground's force under each sole, and the forces in the joint couplings, minimising
-the sum of squared activations. That is the classic physiological criterion, and it is also qigong's *song* (松): no more effort
-than the posture needs. Tension the practitioner holds raises a region's activation floor (co-contraction), and the body says
-what it costs against what the posture needs. Quiet standing comes out as it does in real bodies: the soleus at a few percent,
-the back nearly silent; a horse stance loads the quadriceps; one-leg standing loads the glutes.
+finds the activations of all 416 muscles, the ground's force under each sole, the force through each palm when the hands rest on
+the thighs, and the forces in the joint couplings, minimising the sum of squared activations. That is the classic physiological
+criterion, and it is also qigong's *song* (松): no more effort than the posture needs. Tension the practitioner holds raises a
+region's activation floor (co-contraction), and the body says what it costs against what the posture needs. Quiet standing comes
+out as it does in real bodies: the soleus at a few percent, the back nearly silent; a horse stance loads the quadriceps;
+one-leg standing loads the glutes; leaning on the thighs (Sway the head and shake the tail) the arms take half the lower back's
+work.
 
 **Relaxation needs slack.** The published model leaves many muscles past their passive onset when standing (over 4 kN of passive
 pull with nothing active), which is fine for training walking policies and wrong for a body meant to feel relaxation. Wuji
