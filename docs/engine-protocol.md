@@ -136,7 +136,8 @@ what the posture needs. Regions: `feet`, `calves`, `thighs`, `hips`, `lower_back
 `{"name": ...}` plays a named sequence of intentions (`engine/src/wuji/forms.py`): `wuji` (settle), `embrace_tree` (zhan
 zhuang), the Eight Brocades one by one (`lift_sky`, `draw_bow`, `separate`, `owl`, `sway_tail`, `hold_feet`, `fists`,
 `bounce`), or `ba_duan_jin`, all eight in order (about five minutes). → `{"accepted": true, "steps": 4, "text":
-"..."}`. Progress arrives as `form` events.
+"..."}`. Progress arrives as `form` events: each part announced as it begins, then each movement with its breath
+(`"Out, drawing the bow to the left, the eyes on the raised finger."`), about sixty in the Eight Brocades.
 
 ### `reset`
 
@@ -162,7 +163,8 @@ are documented in `engine/src/wuji/viewer.py`. The page loads three.js from a CD
 |---|---|---|
 | `balance` | the centre of pressure nears the edge of the support, a foot unloads, or sway grows | `severity` (`notice`, `warning`), `text` |
 | `breath` | the urge to breathe rises during a hold (CO₂), or the breath settles again | `kind` (`urge`, `settled`), `urge` 0..1, `text` |
-| `form` | a step of a form begins, or the form ends | `name`, `step`, `of`, `done`, `text` |
+| `form` | a part of a form begins ("Two hands hold up the heavens: ..."), a movement begins with its breath ("In, the arms rise to hold up the heavens."), or the form ends | `name`, `step`, `of`, `done`, `text`; `breath` (`inhale`, `exhale`) for a movement |
 | `strain` | a posture cannot be held without excessive effort (the solver needs large residual forces) | `text` |
 
-Events are rare by design: a few per minute at most. They are the body asking for attention, not a stream.
+Events are the body asking for attention, not a stream of state: outside a form a few per minute at most. A form calls at
+every movement, one every few seconds, so a practitioner woken by them is present for each.

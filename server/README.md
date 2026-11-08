@@ -85,8 +85,8 @@ can only narrow. The receipt names each disabled feature set and what is missing
 | `WUJI_FELT_SENSE` | `ambient` | what is injected before each turn: `ambient`, only what changed since the body was last noticed (one quiet line when nothing did), or `brief`, the whole picture every time |
 | `WUJI_TOOL_TIMEOUT_MS` | `20000` | how long a tool call may wait for the engine, including for it to start |
 | `WUJI_ENGINE_START_TIMEOUT_MS` | `300000` | how long a new engine has to answer `hello` (a first `uv run` may install packages) |
-| `WUJI_PUSH_MIN_INTERVAL_MS` | `5000` | at most one signal of each kind per interval; a newer one waiting replaces an older |
-| `WUJI_PUSH_MAX_PER_MINUTE` | `12` | across all kinds |
+| `WUJI_PUSH_MIN_INTERVAL_MS` | `1000` | at most one signal of each kind per interval; a newer one waiting replaces an older |
+| `WUJI_PUSH_MAX_PER_MINUTE` | `40` | across all kinds (a form calls at every movement, one every few seconds; the bounce about every two) |
 | `WUJI_RESTART_MIN_MS` / `WUJI_RESTART_MAX_MS` | `500` / `30000` | engine restart backoff (doubling; reset after a minute of uptime) |
 
 The bridge's `transport.env` sets these for one server.

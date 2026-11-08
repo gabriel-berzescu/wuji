@@ -130,11 +130,16 @@ class Engine:
         while f["next"] < len(steps) and self.body.t - f["t0"] >= steps[f["next"]][0]:
             _, op, args = steps[f["next"]]
             f["next"] += 1
-            if op == "announce":  # the form speaks only here (a brocade begins) and at its end: a few calls, not a stream
+            if op == "announce":  # a brocade begins
                 self.event("form", {"name": f["name"], "step": f["next"], "of": len(steps), "done": False,
                                     "text": args["text"]}, every=0.0)
-            else:
-                self.apply(op, args)
+                continue
+            if op == "intend" and args.get("say"):  # a movement, with its breath: the practitioner is called at each
+                cue = {"inhale": "In, ", "exhale": "Out, "}.get(args.get("breath"), "")
+                say = cue + args["say"] if cue else args["say"][0].upper() + args["say"][1:]
+                self.event("form", {"name": f["name"], "step": f["next"], "of": len(steps), "done": False,
+                                    "breath": args.get("breath"), "text": say + "."}, every=0.0)
+            self.apply(op, {k: v for k, v in args.items() if k != "say"})
         if f["next"] >= len(steps) and not self.body.moving:
             self.event("form", {"name": f["name"], "step": len(steps), "of": len(steps), "done": True,
                                 "text": f"The form {f['name'].replace('_', ' ')} is complete."}, every=0.0)

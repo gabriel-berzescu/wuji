@@ -35,15 +35,17 @@ def test_every_form_is_made_of_valid_intentions(body):
             if op == "intend":
                 cue = args.get("breath")
                 assert cue in (None, "inhale", "exhale"), (name, cue)
-                body.intend(**{k: v for k, v in args.items() if k != "breath"})
+                body.intend(**{k: v for k, v in args.items() if k not in ("breath", "say")})
             elif op == "tension":
                 body.set_tension(args["region"], args["level"])
             elif op == "announce":
                 assert args["text"], name
             else:
                 assert op == "breathe" and args["pattern"] in ("natural", "abdominal", "reverse", "hold")
-    # a form speaks a few times, not at every step: the brocades once each
+    # each brocade is announced, and its movements speak with their breath
     assert sum(op == "announce" for _, op, _ in FORMS["ba_duan_jin"]) == 8
+    spoken = [a for _, op, a in FORMS["ba_duan_jin"] if op == "intend" and a.get("say")]
+    assert len(spoken) > 50 and all(a.get("breath") in ("inhale", "exhale") for a in spoken)
     assert _length(FORMS["ba_duan_jin"]) > 240  # all eight, about five minutes
     # every movement of a brocade (past its setting up) is led by its breath
     from wuji.forms import BROCADES

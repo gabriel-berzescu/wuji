@@ -1,8 +1,9 @@
 """The forms: named sequences of intentions, with their breath.
 
 Each step is (seconds after the form begins, operation, arguments), the operations those of the engine protocol (intend,
-breathe, tension), or "announce" {"text"}: what the form says as a part of it begins (the only steps that become events,
-so a practitioner woken by them is called a few times, not at every movement). The breath leads the movement: each movement carries its breath phase ("breath": "inhale" | "exhale"),
+breathe, tension), or "announce" {"text"}: what the form says as a brocade begins. A movement can say what it is ("say"): the engine
+calls the practitioner with it, joined to its breath ("In, the arms rise to hold up the heavens."), so someone woken by
+the form's signals is present at every movement (Gabriel: "87 events is not too much ... all things must pass"). The breath leads the movement: each movement carries its breath phase ("breath": "inhale" | "exhale"),
 which begins with it and lasts as long: in while rising or opening, out while sinking, closing, or putting out force (the
 bow drawn, the fist sent).
 
@@ -54,17 +55,20 @@ CENTRE = {"twist": 0.0, "side_bend": 0.0, "bend": 0.0, "rise": 0.0}
 
 
 def lift_sky() -> list[Step]:
-    up = {"arms": "lift_sky", "sink": 0.05, **IN}
-    down = {"arms": "press_down", "sink": 0.3, **OUT}
+    up = {"arms": "lift_sky", "sink": 0.05, **IN, "say": "the arms rise to hold up the heavens"}
+    down = {"arms": "press_down", "sink": 0.3, **OUT, "say": "the hands press down before the body"}
     return _announced("Two hands hold up the heavens: in as the arms rise, out as they press down; three times.",
                       _paced(_seq((3, {"stance": "wuji", "sink": 0.3, "arms": "hang", **CENTRE}), (PACE, up), (PACE, down),
-                                  (PACE, up), (PACE, down), (PACE, up), (PACE, {"arms": "hang", "sink": 0.25, **OUT}))))
+                                  (PACE, up), (PACE, down), (PACE, up),
+                                  (PACE, {"arms": "hang", "sink": 0.25, **OUT, "say": "the arms settle"}))))
 
 
 def draw_bow() -> list[Step]:
-    left = {"arm_left": "bow_extend", "arm_right": "bow_pull", "twist": 0.45, "sink": 0.6, **OUT}
-    right = {"arm_right": "bow_extend", "arm_left": "bow_pull", "twist": -0.45, "sink": 0.6, **OUT}
-    home = {"arms": "embrace", "twist": 0.0, "sink": 0.45, **IN}
+    left = {"arm_left": "bow_extend", "arm_right": "bow_pull", "twist": 0.45, "sink": 0.6, **OUT,
+            "say": "drawing the bow to the left, the eyes on the raised finger"}
+    right = {"arm_right": "bow_extend", "arm_left": "bow_pull", "twist": -0.45, "sink": 0.6, **OUT,
+             "say": "drawing the bow to the right, the eyes on the raised finger"}
+    home = {"arms": "embrace", "twist": 0.0, "sink": 0.45, **IN, "say": "the hands come back before the chest"}
     return _announced("Drawing the bow to shoot the eagle: into horse stance; out as the bow is drawn, in returning; left, "
                       "right, twice.",
                       _paced(_seq((6, {"stance": "horse", "sink": 0.45, "arms": "embrace", **CENTRE}), (PACE, left),
@@ -73,19 +77,21 @@ def draw_bow() -> list[Step]:
 
 
 def separate() -> list[Step]:
-    left = {"arm_left": "lift_sky", "arm_right": "earth_press", "sink": 0.1, **IN}
-    right = {"arm_right": "lift_sky", "arm_left": "earth_press", "sink": 0.1, **IN}
-    home = {"arms": "embrace", "sink": 0.3, **OUT}
+    left = {"arm_left": "lift_sky", "arm_right": "earth_press", "sink": 0.1, **IN,
+            "say": "the left hand rises to heaven, the right presses the earth"}
+    right = {"arm_right": "lift_sky", "arm_left": "earth_press", "sink": 0.1, **IN,
+             "say": "the right hand rises to heaven, the left presses the earth"}
+    home = {"arms": "embrace", "sink": 0.3, **OUT, "say": "the hands come back together"}
     return _announced("Separating heaven and earth: in as one hand rises and the other presses down, out returning.",
                       _paced(_seq((3, {"stance": "wuji", "sink": 0.3, "arms": "embrace", **CENTRE}), (PACE, left),
                                   (PACE, home), (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right),
-                                  (PACE, {"arms": "hang", "sink": 0.25, **OUT}))))
+                                  (PACE, {"arms": "hang", "sink": 0.25, **OUT, "say": "the arms settle"}))))
 
 
 def owl() -> list[Step]:
-    left = {"twist": 0.8, "arms": "owl", **IN}
-    right = {"twist": -0.8, "arms": "owl", **IN}
-    home = {"twist": 0.0, "arms": "hang", **OUT}
+    left = {"twist": 0.8, "arms": "owl", **IN, "say": "turning to look back over the left shoulder"}
+    right = {"twist": -0.8, "arms": "owl", **IN, "say": "turning to look back over the right shoulder"}
+    home = {"twist": 0.0, "arms": "hang", **OUT, "say": "turning back to the front"}
     return _announced("The wise owl gazes backward: in as the body turns to look behind, out returning.",
                       _paced(_seq((3, {"stance": "wuji", "sink": 0.25, "arms": "hang", **CENTRE}), (PACE, left),
                                   (PACE, home), (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right),
@@ -93,9 +99,11 @@ def owl() -> list[Step]:
 
 
 def sway_tail() -> list[Step]:
-    left = {"side_bend": 0.8, "bend": 0.35, "twist": 0.3, "weight": 0.7, **OUT}
-    right = {"side_bend": -0.8, "bend": 0.35, "twist": -0.3, "weight": 0.3, **OUT}
-    home = {"side_bend": 0.0, "bend": 0.0, "twist": 0.0, "weight": 0.5, **IN}
+    left = {"side_bend": 0.8, "bend": 0.35, "twist": 0.3, "weight": 0.7, **OUT,
+            "say": "leaning and turning to the left, the tailbone swinging the other way"}
+    right = {"side_bend": -0.8, "bend": 0.35, "twist": -0.3, "weight": 0.3, **OUT,
+             "say": "leaning and turning to the right, the tailbone swinging the other way"}
+    home = {"side_bend": 0.0, "bend": 0.0, "twist": 0.0, "weight": 0.5, **IN, "say": "back to the centre"}
     return _announced("Sway the head and shake the tail: horse stance, hands on the thighs; out leaning, in returning.",
                       _paced(_seq((6, {"stance": "horse", "sink": 0.6, "arms": "hands_thighs", **CENTRE}), (PACE, left),
                                   (PACE, home), (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right),
@@ -103,18 +111,18 @@ def sway_tail() -> list[Step]:
 
 
 def hold_feet() -> list[Step]:
-    up = {"arms": "lift_sky", "bend": 0.0, "sink": 0.05, **IN}
-    fold = {"arms": "hang", "bend": 0.9, "sink": 0.1, **OUT}
+    up = {"arms": "lift_sky", "bend": 0.0, "sink": 0.05, **IN, "say": "rising, the arms reaching up"}
+    fold = {"arms": "hang", "bend": 0.9, "sink": 0.1, **OUT, "say": "folding forward, the hands sliding down toward the feet"}
     return _announced("Two hands hold the feet: in reaching up, out folding down.",
                       _paced(_seq((3, {"stance": "wuji", "sink": 0.1, "arms": "hang", **CENTRE}), (PACE, up),
                                   (PACE + 1, fold), (PACE + 1, up), (PACE + 1, fold), (PACE + 1, up),
-                                  (PACE, {"arms": "hang", "sink": 0.25, **OUT}))))
+                                  (PACE, {"arms": "hang", "sink": 0.25, **OUT, "say": "the arms settle"}))))
 
 
 def fists() -> list[Step]:
-    left = {"arm_left": "punch", "arm_right": "fist_waist", **OUT}
-    right = {"arm_right": "punch", "arm_left": "fist_waist", **OUT}
-    home = {"arms": "fist_waist", **IN}
+    left = {"arm_left": "punch", "arm_right": "fist_waist", **OUT, "say": "the left fist goes out, the eyes wide"}
+    right = {"arm_right": "punch", "arm_left": "fist_waist", **OUT, "say": "the right fist goes out, the eyes wide"}
+    home = {"arms": "fist_waist", **IN, "say": "the fist comes back to the waist"}
     return _announced("Clench the fists and glare: horse stance; out with each fist sent forward, in as it returns.",
                       _paced(_seq((6, {"stance": "horse", "sink": 0.55, "arms": "fist_waist", **CENTRE}), (PACE, left),
                                   (PACE, home), (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right),
@@ -125,7 +133,8 @@ def bounce() -> list[Step]:
     steps = [(0.0, "breathe", {"pattern": "natural"})]
     seq = [(3, {"stance": "wuji", "sink": 0.05, "arms": "hang", **CENTRE})]
     for _ in range(7):
-        seq += [(1.6, {"rise": 1.0, **IN}), (0.6, {"rise": 0.0, **OUT})]  # up slowly on the inhale, down on the heels
+        seq += [(1.6, {"rise": 1.0, **IN, "say": "up on the toes, then down on the heels"}),
+                (0.6, {"rise": 0.0, **OUT})]  # up slowly on the inhale, down on the heels (the rise speaks for both)
     seq += [(3, {"sink": 0.25})]
     return _announced("Bouncing on the toes: in rising, out as the heels drop; seven times.", steps + _seq(*seq))
 

@@ -57,8 +57,8 @@ export class WujiServer {
     this.toolTimeoutMs = opts.toolTimeoutMs ?? 20_000;
     this.maxInjectionChars = opts.maxInjectionChars ?? 1_500;
     this.throttle = new SignalThrottle<PushEventParams>({
-      minIntervalMs: opts.pushMinIntervalMs ?? 5_000,
-      maxPerMinute: opts.pushMaxPerMinute ?? 12,
+      minIntervalMs: opts.pushMinIntervalMs ?? 1_000,
+      maxPerMinute: opts.pushMaxPerMinute ?? 40,
       send: (p) => this.sendPush(p),
       drop: (p, why) => this.log(`signal ${p.eventId} not pushed: ${why}`),
     });

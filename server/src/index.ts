@@ -25,8 +25,9 @@ async function main(): Promise<void> {
     senseBudgetMs: envMs(env, 'WUJI_SENSE_BUDGET_MS', 1_500),
     feltSense: env.WUJI_FELT_SENSE === 'brief' ? 'brief' : 'ambient',
     toolTimeoutMs: envMs(env, 'WUJI_TOOL_TIMEOUT_MS', 20_000),
-    pushMinIntervalMs: envMs(env, 'WUJI_PUSH_MIN_INTERVAL_MS', 5_000),
-    pushMaxPerMinute: envMs(env, 'WUJI_PUSH_MAX_PER_MINUTE', 12),
+    // a form calls at every movement (one every few seconds): one a second per kind, 40 a minute in all
+    pushMinIntervalMs: envMs(env, 'WUJI_PUSH_MIN_INTERVAL_MS', 1_000),
+    pushMaxPerMinute: envMs(env, 'WUJI_PUSH_MAX_PER_MINUTE', 40),
   });
 
   const conn = McplConnection.fromStreams(process.stdin, process.stdout);
