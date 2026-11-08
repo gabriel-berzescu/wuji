@@ -25,6 +25,7 @@ PAB_REST = 8.0
 
 TENSION_FLOOR = 0.15  # activation a fully held region keeps (co-contraction), on top of what the posture needs
 FOOT_LIFT = 0.06  # how high a stepping foot rises (m)
+HAND_CONTACT = 0.015  # a resting palm this close to its thigh's surface (m) is on it, and can press
 
 
 def _min_jerk(s: float) -> float:
@@ -62,11 +63,13 @@ class Body:
         self.abdominal_pressure = PAB_REST  # set by the breath, cmH2O
 
         self.q = self.posture_solver.solve(self.posture, feet=self.pose["feet"], knee_deg=self.pose["knee"],
-                                           arms=self.pose["arms_l"], arms_right=self.pose["arms_r"], iterations=80)
+                                           arms=self.pose["arms_l"], arms_right=self.pose["arms_r"], iterations=80,
+                                           rest=self.pose["rest"])
         self.q_prev = self.q.copy()
         self.qvel = np.zeros(self.m.nv)
         self.qvel_prev = np.zeros(self.m.nv)
         self.loaded = {"left": True, "right": True}
+        self.hands = self._hands_on_thighs(self.pose)
         self.solution: Solution | None = None
         self.minimum: Solution | None = None  # the same moment without held tension
         self._minimum_at = -1e9
@@ -81,7 +84,8 @@ class Body:
                 "arms_l": dict(ARMS[p.arm_left or p.arms]), "arms_r": dict(ARMS[p.arm_right or p.arms]),
                 "bend": p.bend * TRUNK_MAX["bend"], "twist": p.twist * TRUNK_MAX["twist"],
                 "side": p.side_bend * TRUNK_MAX["side"], "rise": p.rise * RISE_MAX,
-                "feet": dict(feet or self.posture_solver.feet_for(p.stance)), "lift": {"left": 0.0, "right": 0.0}}
+                "feet": dict(feet or self.posture_solver.feet_for(p.stance)), "lift": {"left": 0.0, "right": 0.0},
+                "rest": {s: float((getattr(p, f"arm_{s}") or p.arms) == "hands_thighs") for s in ("left", "right")}}
 
     def intend(self, stance=None, weight=None, sink=None, arms=None, tailbone=None, arm_left=None, arm_right=None,
                bend=None, twist=None, side_bend=None, rise=None, over: float = 3.0) -> str:
@@ -216,13 +220,20 @@ class Body:
         self.q = self.posture_solver.solve(now, feet=pose["feet"], lift=pose["lift"], knee_deg=pose["knee"],
                                            arms=pose["arms_l"], arms_right=pose["arms_r"], iterations=6, sway=sway,
                                            tilt_deg=pose["tilt"], rise_deg=pose["rise"],
-                                           trunk={"bend": pose["bend"], "twist": pose["twist"], "side": pose["side"]})
+                                           trunk={"bend": pose["bend"], "twist": pose["twist"], "side": pose["side"]},
+                                           rest=pose["rest"])
         tiptoe = pose["rise"] > 3.0
         self.loaded = {s: (False if pose["lift"][s] >= 0.005 else "forefoot" if tiptoe else True) for s in ("left", "right")}
+        self.hands = self._hands_on_thighs(pose)
         qvel = np.zeros(self.m.nv)
         mujoco.mj_differentiatePos(self.m, qvel, dt, self.q_prev, self.q)
         self.qvel_prev, self.qvel = self.qvel, 0.7 * self.qvel + 0.3 * qvel  # light smoothing of numerical velocity
         self.current = pose
+
+    def _hands_on_thighs(self, pose: dict) -> dict:
+        """side -> True when that hand rests on its thigh (the arm in hands_thighs, the palm on the thigh's surface)."""
+        gap = self.posture_solver.hand_gap
+        return {s: bool(pose["rest"][s] > 0 and abs(gap.get(s, np.inf)) < HAND_CONTACT) for s in ("left", "right")}
 
     def abdominal_support(self) -> np.ndarray:
         """The extension moment the belly's pressure gives the lumbar spine, as a generalised force."""
@@ -244,7 +255,7 @@ class Body:
         floor = np.array([TENSION_FLOOR * self.tension[r] for r in self.a.muscle_region])
         external = self.abdominal_support()
         solution = self.muscles.solve(self.q, self.qvel, qacc, floor=floor, loaded=getattr(self, "loaded", None),
-                                      external=external)
+                                      hands=getattr(self, "hands", None), external=external)
         if not solution.ok and self.solution is not None:
             return self.solution  # a moment the solver could not settle: keep the last good one
         self.solution = solution
@@ -253,7 +264,7 @@ class Body:
             self.minimum = solution
         elif self.minimum is None or self.t - self._minimum_at > 1.0:
             prev = self.muscles.prev.copy()
-            minimum = self.muscles.solve(self.q, self.qvel, qacc, loaded=self.loaded, external=external)
+            minimum = self.muscles.solve(self.q, self.qvel, qacc, loaded=self.loaded, hands=self.hands, external=external)
             self.muscles.prev = prev
             if minimum.ok:
                 self.minimum, self._minimum_at = minimum, self.t
@@ -275,4 +286,5 @@ def _blend(a: dict, b: dict, s: float) -> dict:
         "rise": lerp(a["rise"], b["rise"]),
         "feet": {k: lerp(a["feet"][k], b["feet"][k]) for k in a["feet"]},
         "lift": {k: lerp(a["lift"][k], b["lift"][k]) for k in a["lift"]},
+        "rest": {k: lerp(a["rest"][k], b["rest"][k]) for k in a["rest"]},
     }

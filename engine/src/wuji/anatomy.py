@@ -66,6 +66,27 @@ class SolePoint:
     where: str  # 'heel' | 'ball' | 'toe'
 
 
+@dataclass(frozen=True)
+class Palm:
+    """The middle of a palm, where a hand rests on its thigh: a point on the hand and the way the palm faces (hand frame)."""
+    hand: int  # the body it rides on (the third metacarpal)
+    local: np.ndarray  # position in that body's frame
+    normal: np.ndarray  # out of the palm, in that body's frame
+    femur: int  # the thigh it can rest on, the same side's
+
+
+@dataclass(frozen=True)
+class Thigh:
+    """The front of a thigh, in the femur's frame (x forward, y up the bone, z to the body's right): the soft tissue is the
+    femur's two collision capsules, 8 cm in radius at the top and 6.7 cm above the knee. front(y) is the point on the
+    front surface at height y (m, negative down the bone; the knee joint is at y = -0.40)."""
+    radius_at: tuple  # ((y top, y low), (radius there, radius there)): the surface tapers linearly between the capsules
+    knee_y: float
+
+    def front(self, y: float) -> np.ndarray:
+        return np.array([float(np.interp(y, self.radius_at[0][::-1], self.radius_at[1][::-1])), y, 0.0])
+
+
 def load_model() -> mujoco.MjModel:
     return mujoco.MjModel.from_xml_path(str(musclemimic_models.get_xml_path("myofullbody")))
 
@@ -122,12 +143,25 @@ class Anatomy:
         self.coupled_qadr = {c[0] for c in self.couplings}
 
         self.sole = self._sole_points()
+        # the palms: 2 cm in front of the third metacarpal's middle (the palm's soft tissue); the model mirrors the left
+        # hand's frame, so the left palm faces the hand's +z and the right palm its -z
+        self.palm = {side: Palm(self.body[f"thirdmc_{side[0]}"], np.array([0.0, 0.0, 0.02 * sgn]), np.array([0.0, 0.0, sgn]),
+                                self.body[f"femur_{side[0]}"]) for side, sgn in (("left", 1.0), ("right", -1.0))}
+        self.thigh = self._thigh()
 
-    def couple(self, qpos: np.ndarray) -> None:
-        """Sets every coupled joint from its master, in place (the spine's vertebrae, the shoulder rhythm, the patellae)."""
+    def _thigh(self) -> Thigh:
+        m = self.m
+        caps = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, f"l_femur{k}_col") for k in (1, 2)]
+        knee = m.body_pos[self.body["tibia_l"]]
+        return Thigh(((float(m.geom_pos[caps[0], 1]), float(m.geom_pos[caps[1], 1])),
+                      (float(m.geom_size[caps[0], 0]), float(m.geom_size[caps[1], 0]))), float(knee[1]))
+
+    def couple(self, qpos: np.ndarray, couplings: list | None = None) -> None:
+        """Sets every coupled joint from its master, in place (the spine's vertebrae, the shoulder rhythm, the patellae);
+        only the couplings given, when given."""
         q0 = self.m.qpos0
         for _ in range(2):  # chains of couplings settle in two passes
-            for a1, a2, c in self.couplings:
+            for a1, a2, c in self.couplings if couplings is None else couplings:
                 x = qpos[a2] - q0[a2] if a2 >= 0 else 0.0
                 qpos[a1] = q0[a1] + c[0] + x * (c[1] + x * (c[2] + x * (c[3] + x * c[4])))
 

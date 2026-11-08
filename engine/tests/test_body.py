@@ -168,3 +168,46 @@ def test_the_diaphragm_works_with_the_rest(body):
     out = sense.read(breath_state={"diaphragm": 0.0, "pattern": "abdominal"}, breath_felt=["Exhale."])
     assert out["body"]["effort"]["regions"]["diaphragm"] > 0.35
     assert "diaphragm" in out["text"]
+
+
+def lean_left(b: Body, arms: str):
+    """Sway the head and shake the tail, to the bottom of the left lean (horse stance, sink 0.6)."""
+    b.reset()
+    settle(b, 3.0)
+    b.intend(stance="horse", sink=0.6, arms=arms, side_bend=0.0, bend=0.0, twist=0.0, weight=0.5, over=4.0)
+    settle(b, 6.0)
+    b.intend(side_bend=0.8, bend=0.35, twist=0.3, weight=0.7, over=4.0)
+    return settle(b, 4.5)
+
+
+def test_hands_on_the_thighs_carry_the_lean(body):
+    """Leaning on the thighs, the palms press on them and the arms take part of the trunk's weight from the lower back."""
+    sol = lean_left(body, "hands_thighs")
+    assert body.hands == {"left": True, "right": True}
+    assert all(abs(g) < 0.015 for g in body.posture_solver.hand_gap.values())  # the palms are on the thighs
+    weight = body.m.body_mass.sum() * 9.81
+    for side in ("left", "right"):
+        f = sol.hands[side]["force"]
+        assert 10 < np.linalg.norm(f) < 150 and f[2] > 0  # tens of newtons, holding the hand up
+    assert sum(h["force"][2] for h in sol.hands.values()) < 0.25 * weight  # leaning, not hanging on the arms
+    assert sum(g["force"][2] for g in sol.grf.values()) == pytest.approx(weight, rel=0.03)  # internal: the ground carries all
+    # the same moment with the hands lifted off the thighs
+    prev = body.muscles.prev.copy()
+    alone = body.muscles.solve(body.q, body.qvel, np.zeros(body.m.nv), loaded=body.loaded, external=body.abdominal_support())
+    body.muscles.prev = prev
+    assert alone.ok and alone.hands == {}
+    f0, reg = body.a.f0, body.a.muscle_region
+    back, back_alone = (region_effort(s.act, f0, reg == "lower_back") for s in (sol, alone))
+    arms, arms_alone = (region_effort(s.act, f0, (reg == "arms") | (reg == "shoulders")) for s in (sol, alone))
+    assert back < 0.7 * back_alone
+    assert arms > arms_alone + 0.05
+    # the hands leave the thighs: no more contact
+    body.intend(arms="hang", side_bend=0.0, bend=0.0, twist=0.0, weight=0.5, over=3.0)
+    sol = settle(body, 4.0)
+    assert body.hands == {"left": False, "right": False} and sol.hands == {}
+
+
+def test_no_hand_contact_in_other_arm_shapes(body):
+    for arms in ("hang", "press_down"):
+        sol = lean_left(body, arms)
+        assert body.hands == {"left": False, "right": False} and sol.hands == {}
