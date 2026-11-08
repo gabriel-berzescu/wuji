@@ -356,7 +356,7 @@ class PostureSolver:
     def _clip(self, q: np.ndarray) -> None:
         m = self.m
         for j in range(m.njnt):
-            if m.jnt_limited[j] and m.jnt_type[j] in (mujoco.mjtJoint.mjJNT_HINGE, mujoco.mjtJoint.mjJNT_SLIDE):
+            if m.jnt_limited[j] and int(m.jnt_type[j]) in (int(mujoco.mjtJoint.mjJNT_HINGE), int(mujoco.mjtJoint.mjJNT_SLIDE)):
                 adr = m.jnt_qposadr[j]
                 q[adr] = np.clip(q[adr], *m.jnt_range[j])
 

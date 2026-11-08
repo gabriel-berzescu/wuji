@@ -289,7 +289,9 @@ class Anatomy:
         self.couple(qm)
         slope = np.zeros(m.nv)  # each dof's velocity per unit of the joint's
         for j in range(m.njnt):
-            if m.jnt_type[j] in (mujoco.mjtJoint.mjJNT_HINGE, mujoco.mjtJoint.mjJNT_SLIDE):
+            # ints on both sides: on Linux and macOS MuJoCo's enum compares unequal to numpy's int32 (enum == np.int32
+            # is False there, though np.int32 == enum is True), so `x in (enum, ...)` silently matched nothing
+            if int(m.jnt_type[j]) in (int(mujoco.mjtJoint.mjJNT_HINGE), int(mujoco.mjtJoint.mjJNT_SLIDE)):
                 slope[m.jnt_dofadr[j]] = (qp[m.jnt_qposadr[j]] - qm[m.jnt_qposadr[j]]) / (2 * h)
         d.qpos[:] = q
         self.couple(d.qpos)
