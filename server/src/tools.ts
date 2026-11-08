@@ -49,6 +49,7 @@ export const TOOLS: ToolDefinition[] = [
         twist: signed('The trunk turning: positive to the left, -1 .. 1 (about 40 degrees). The head turns with the chest: this body has no neck joints.'),
         side_bend: signed('The trunk leaning sideways: positive to the left, -1 .. 1 (about 20 degrees).'),
         rise: unit('Up on the toes: 0 heels down .. 1 heels raised about 22 degrees, the weight over the balls of the feet.'),
+        breath: { type: 'string', enum: ['inhale', 'exhale'], description: 'Breath-led movement: this phase of the breath begins with the movement and lasts as long (in while rising or opening, out while sinking or closing); the breath keeps that pace between cues.' },
         over: seconds('Seconds to arrive (minimum-jerk movement).'),
       },
       additionalProperties: false,

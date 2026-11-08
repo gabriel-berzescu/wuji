@@ -17,6 +17,12 @@ from .anatomy import Anatomy, REGION_ORDER, calibrate_rest, load_model
 from .muscles import MuscleSolver, Solution
 from .posture import ARMS, RISE_MAX, STANCES, TRUNK_MAX, Posture, PostureSolver, pelvic_tilt
 
+# Abdominal pressure above rest pushes the lumbar spine toward extension: about 0.15 N m per cmH2O here (the pressure acts
+# on roughly 250 cm2 of the abdominal cavity's roof, a few centimetres in front of the spine; Daggfeldt and Thorstensson
+# 1997 measured the moment it can make; Hodges, Eriksson, Shirley and Gandevia 2005 its effect on spinal stiffness).
+IAP_MOMENT = 0.15  # N m per cmH2O above PAB_REST
+PAB_REST = 8.0
+
 TENSION_FLOOR = 0.15  # activation a fully held region keeps (co-contraction), on top of what the posture needs
 FOOT_LIFT = 0.06  # how high a stepping foot rises (m)
 
@@ -53,6 +59,7 @@ class Body:
         self.sway = np.zeros(2)
         self._sway_v = np.zeros(2)
         self.breath_shift = 0.0  # set by the breath, metres along FORWARD
+        self.abdominal_pressure = PAB_REST  # set by the breath, cmH2O
 
         self.q = self.posture_solver.solve(self.posture, feet=self.pose["feet"], knee_deg=self.pose["knee"],
                                            arms=self.pose["arms_l"], arms_right=self.pose["arms_r"], iterations=80)
@@ -217,11 +224,27 @@ class Body:
         self.qvel_prev, self.qvel = self.qvel, 0.7 * self.qvel + 0.3 * qvel  # light smoothing of numerical velocity
         self.current = pose
 
+    def abdominal_support(self) -> np.ndarray:
+        """The extension moment the belly's pressure gives the lumbar spine, as a generalised force."""
+        out = np.zeros(self.m.nv)
+        out[self.a.dadr["flex_extension"]] = IAP_MOMENT * max(0.0, self.abdominal_pressure - PAB_REST)
+        return out
+
+    def breath_shaping(self) -> tuple[float, float]:
+        """How the body shapes the breath now: (belly compression, 0..1, from folding forward; rib opening, 0..1, from
+        the arms raised overhead)."""
+        pose = getattr(self, "current", None) or self.pose
+        fold = min(1.0, pose["bend"] / 100.0)
+        elev = 0.5 * (pose["arms_l"]["shoulder_elv"] + pose["arms_r"]["shoulder_elv"])
+        return 0.7 * fold, min(1.0, max(0.0, (elev - 60.0) / 100.0))
+
     def solve_muscles(self, dt: float = 0.05) -> Solution:
         """Who carries the load right now (a few times a second)."""
         qacc = (self.qvel - self.qvel_prev) / max(dt, 1e-3)
         floor = np.array([TENSION_FLOOR * self.tension[r] for r in self.a.muscle_region])
-        solution = self.muscles.solve(self.q, self.qvel, qacc, floor=floor, loaded=getattr(self, "loaded", None))
+        external = self.abdominal_support()
+        solution = self.muscles.solve(self.q, self.qvel, qacc, floor=floor, loaded=getattr(self, "loaded", None),
+                                      external=external)
         if not solution.ok and self.solution is not None:
             return self.solution  # a moment the solver could not settle: keep the last good one
         self.solution = solution
@@ -230,7 +253,7 @@ class Body:
             self.minimum = solution
         elif self.minimum is None or self.t - self._minimum_at > 1.0:
             prev = self.muscles.prev.copy()
-            minimum = self.muscles.solve(self.q, self.qvel, qacc, loaded=self.loaded)
+            minimum = self.muscles.solve(self.q, self.qvel, qacc, loaded=self.loaded, external=external)
             self.muscles.prev = prev
             if minimum.ok:
                 self.minimum, self._minimum_at = minimum, self.t

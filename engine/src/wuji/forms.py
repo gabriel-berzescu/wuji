@@ -1,7 +1,9 @@
 """The forms: named sequences of intentions, with their breath.
 
 Each step is (seconds after the form begins, operation, arguments), the operations those of the engine protocol (intend,
-breathe, tension). The breath is paced to the movement: in while opening or rising, out while closing or sinking.
+breathe, tension). The breath leads the movement: each movement carries its breath phase ("breath": "inhale" | "exhale"),
+which begins with it and lasts as long: in while rising or opening, out while sinking, closing, or putting out force (the
+bow drawn, the fist sent).
 
 Ba Duan Jin, the Eight Brocades (八段錦), in the common modern sequence:
     1. Two hands hold up the heavens              lift_sky
@@ -32,7 +34,11 @@ def _seq(*moves: tuple[float, dict]) -> list[Step]:
 
 
 def _paced(steps: list[Step]) -> list[Step]:
-    return [(0.0, "breathe", {"pattern": "abdominal", "inhale": PACE, "exhale": PACE})] + steps
+    """Belly breathing, led by the movements' own breath cues."""
+    return [(0.0, "breathe", {"pattern": "abdominal"})] + steps
+
+
+IN, OUT = {"breath": "inhale"}, {"breath": "exhale"}
 
 
 def _length(steps: list[Step]) -> float:
@@ -43,58 +49,58 @@ CENTRE = {"twist": 0.0, "side_bend": 0.0, "bend": 0.0, "rise": 0.0}
 
 
 def lift_sky() -> list[Step]:
-    up = {"arms": "lift_sky", "sink": 0.05}
-    down = {"arms": "press_down", "sink": 0.3}
+    up = {"arms": "lift_sky", "sink": 0.05, **IN}
+    down = {"arms": "press_down", "sink": 0.3, **OUT}
     return _paced(_seq((3, {"stance": "wuji", "sink": 0.3, "arms": "hang", **CENTRE}), (PACE, up), (PACE, down), (PACE, up),
-                       (PACE, down), (PACE, up), (PACE, {"arms": "hang", "sink": 0.25})))
+                       (PACE, down), (PACE, up), (PACE, {"arms": "hang", "sink": 0.25, **OUT})))
 
 
 def draw_bow() -> list[Step]:
-    left = {"arm_left": "bow_extend", "arm_right": "bow_pull", "twist": 0.45, "sink": 0.6}
-    right = {"arm_right": "bow_extend", "arm_left": "bow_pull", "twist": -0.45, "sink": 0.6}
-    home = {"arms": "embrace", "twist": 0.0, "sink": 0.45}
+    left = {"arm_left": "bow_extend", "arm_right": "bow_pull", "twist": 0.45, "sink": 0.6, **OUT}
+    right = {"arm_right": "bow_extend", "arm_left": "bow_pull", "twist": -0.45, "sink": 0.6, **OUT}
+    home = {"arms": "embrace", "twist": 0.0, "sink": 0.45, **IN}
     return _paced(_seq((6, {"stance": "horse", "sink": 0.45, "arms": "embrace", **CENTRE}), (PACE, left), (PACE, home),
                        (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right), (PACE, home),
                        (6, {"stance": "wuji", "sink": 0.25, "arms": "hang"})))
 
 
 def separate() -> list[Step]:
-    left = {"arm_left": "lift_sky", "arm_right": "earth_press", "sink": 0.1}
-    right = {"arm_right": "lift_sky", "arm_left": "earth_press", "sink": 0.1}
-    home = {"arms": "embrace", "sink": 0.3}
+    left = {"arm_left": "lift_sky", "arm_right": "earth_press", "sink": 0.1, **IN}
+    right = {"arm_right": "lift_sky", "arm_left": "earth_press", "sink": 0.1, **IN}
+    home = {"arms": "embrace", "sink": 0.3, **OUT}
     return _paced(_seq((3, {"stance": "wuji", "sink": 0.3, "arms": "embrace", **CENTRE}), (PACE, left), (PACE, home),
                        (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right),
-                       (PACE, {"arms": "hang", "sink": 0.25})))
+                       (PACE, {"arms": "hang", "sink": 0.25, **OUT})))
 
 
 def owl() -> list[Step]:
-    left = {"twist": 0.8, "arms": "owl"}
-    right = {"twist": -0.8, "arms": "owl"}
-    home = {"twist": 0.0, "arms": "hang"}
+    left = {"twist": 0.8, "arms": "owl", **IN}
+    right = {"twist": -0.8, "arms": "owl", **IN}
+    home = {"twist": 0.0, "arms": "hang", **OUT}
     return _paced(_seq((3, {"stance": "wuji", "sink": 0.25, "arms": "hang", **CENTRE}), (PACE, left), (PACE, home),
                        (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right), (PACE, home)))
 
 
 def sway_tail() -> list[Step]:
-    left = {"side_bend": 0.8, "bend": 0.35, "twist": 0.3, "weight": 0.7}
-    right = {"side_bend": -0.8, "bend": 0.35, "twist": -0.3, "weight": 0.3}
-    home = {"side_bend": 0.0, "bend": 0.0, "twist": 0.0, "weight": 0.5}
+    left = {"side_bend": 0.8, "bend": 0.35, "twist": 0.3, "weight": 0.7, **OUT}
+    right = {"side_bend": -0.8, "bend": 0.35, "twist": -0.3, "weight": 0.3, **OUT}
+    home = {"side_bend": 0.0, "bend": 0.0, "twist": 0.0, "weight": 0.5, **IN}
     return _paced(_seq((6, {"stance": "horse", "sink": 0.6, "arms": "hands_thighs", **CENTRE}), (PACE, left), (PACE, home),
                        (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right), (PACE, home),
                        (6, {"stance": "wuji", "sink": 0.25, "arms": "hang"})))
 
 
 def hold_feet() -> list[Step]:
-    up = {"arms": "lift_sky", "bend": 0.0, "sink": 0.05}
-    fold = {"arms": "hang", "bend": 0.9, "sink": 0.1}
+    up = {"arms": "lift_sky", "bend": 0.0, "sink": 0.05, **IN}
+    fold = {"arms": "hang", "bend": 0.9, "sink": 0.1, **OUT}
     return _paced(_seq((3, {"stance": "wuji", "sink": 0.1, "arms": "hang", **CENTRE}), (PACE, up), (PACE + 1, fold),
-                       (PACE + 1, up), (PACE + 1, fold), (PACE + 1, up), (PACE, {"arms": "hang", "sink": 0.25})))
+                       (PACE + 1, up), (PACE + 1, fold), (PACE + 1, up), (PACE, {"arms": "hang", "sink": 0.25, **OUT})))
 
 
 def fists() -> list[Step]:
-    left = {"arm_left": "punch", "arm_right": "fist_waist"}
-    right = {"arm_right": "punch", "arm_left": "fist_waist"}
-    home = {"arms": "fist_waist"}
+    left = {"arm_left": "punch", "arm_right": "fist_waist", **OUT}
+    right = {"arm_right": "punch", "arm_left": "fist_waist", **OUT}
+    home = {"arms": "fist_waist", **IN}
     return _paced(_seq((6, {"stance": "horse", "sink": 0.55, "arms": "fist_waist", **CENTRE}), (PACE, left), (PACE, home),
                        (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right), (PACE, home),
                        (6, {"stance": "wuji", "sink": 0.25, "arms": "hang"})))
@@ -104,7 +110,7 @@ def bounce() -> list[Step]:
     steps = [(0.0, "breathe", {"pattern": "natural"})]
     seq = [(3, {"stance": "wuji", "sink": 0.05, "arms": "hang", **CENTRE})]
     for _ in range(7):
-        seq += [(1.6, {"rise": 1.0}), (0.6, {"rise": 0.0})]  # up slowly on the inhale, down on the heels
+        seq += [(1.6, {"rise": 1.0, **IN}), (0.6, {"rise": 0.0, **OUT})]  # up slowly on the inhale, down on the heels
     seq += [(3, {"sink": 0.25})]
     return steps + _seq(*seq)
 

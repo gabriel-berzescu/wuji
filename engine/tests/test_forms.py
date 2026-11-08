@@ -33,12 +33,19 @@ def test_every_form_is_made_of_valid_intentions(body):
         assert steps and _length(steps) > 0, name
         for _, op, args in steps:
             if op == "intend":
-                body.intend(**args)
+                cue = args.get("breath")
+                assert cue in (None, "inhale", "exhale"), (name, cue)
+                body.intend(**{k: v for k, v in args.items() if k != "breath"})
             elif op == "tension":
                 body.set_tension(args["region"], args["level"])
             else:
                 assert op == "breathe" and args["pattern"] in ("natural", "abdominal", "reverse", "hold")
     assert _length(FORMS["ba_duan_jin"]) > 240  # all eight, about five minutes
+    # every movement of a brocade (past its setting up) is led by its breath
+    from wuji.forms import BROCADES
+    for form in BROCADES:
+        moves = [args for _, op, args in form() if op == "intend"]
+        assert all("breath" in m for m in moves[1:-1] if "stance" not in m), form.__name__
     body.reset()
 
 

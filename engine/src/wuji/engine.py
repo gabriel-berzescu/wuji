@@ -81,11 +81,15 @@ class Engine:
             # activation puts quiet standing near 1.25 METs and holding the ball near 1.5, as measured in people
             effort = min(1.0, 3.0 * self.senses_effort())
             settled = not b.moving and not any(b.tension.values())
-            for ev in self.breath.step(dt, effort=effort, belly_tension=b.tension["belly"], settled=settled) or []:
+            compression, ribs = b.breath_shaping()
+            belly = max(b.tension["belly"], compression)
+            for ev in self.breath.step(dt, effort=effort, belly_tension=belly, settled=settled, rib_open=ribs) or []:
                 self.event(ev.get("event", "breath"), ev.get("data", {}), every=5.0)
             st = self.breath.state()
             # the breath moves the body: the trunk sways a little forward and back with each breath (mm)
             b.breath_shift = -0.0015 * (st.get("lung_volume_l", 3.0) - 2.75)
+            b.abdominal_pressure = st.get("abdominal_pressure_cmh2o", 8.0)
+            self.senses.note_breath(st.get("diaphragm", 0.0), dt)
         self.run_form()
         if self.viewer is not None:
             self.viewer.publish(self)  # a frame for the viewer, only while someone watches
@@ -138,7 +142,12 @@ class Engine:
     def apply(self, op: str, args: dict) -> str:
         b = self.body
         if op == "intend":
-            return b.intend(stance=args.get("stance"), weight=args.get("weight"), sink=args.get("sink"),
+            led = ""
+            if args.get("breath") is not None:  # breath-led: the breath phase begins with the movement and lasts as long
+                if self.breath is None:
+                    raise ValueError("the breath is not modelled in this build")
+                led = " " + self.breath.cue(args["breath"], float(args.get("over", 3.0)))
+            return led.strip() + (" " if led else "") + b.intend(stance=args.get("stance"), weight=args.get("weight"), sink=args.get("sink"),
                             arms=args.get("arms"), tailbone=args.get("tailbone"), arm_left=args.get("arm_left"),
                             arm_right=args.get("arm_right"), bend=args.get("bend"), twist=args.get("twist"),
                             side_bend=args.get("side_bend"), rise=args.get("rise"),

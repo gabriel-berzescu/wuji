@@ -392,3 +392,39 @@ def test_settling_slows_and_deepens_the_breath_without_moving_co2():
     for _ in range(int(60 / 0.05)):
         b.step(0.05, effort=0.06, settled=False)
     assert b.state()["settled"] < 0.05
+
+
+def test_a_cue_leads_the_breath_with_the_movement():
+    """Breath-led movement: the cued phase begins at once and lasts as long as the movement; the pace carries on."""
+    b = Breath(seed=5)
+    for _ in range(int(20 / 0.05)):
+        b.step(0.05)
+    b.cue("inhale", 4.0)
+    assert b.state()["phase"] == "inhale"
+    v0 = b.state()["lung_volume_l"]
+    for _ in range(int(3.9 / 0.05)):
+        b.step(0.05)
+    s = b.state()
+    assert s["phase"] == "inhale" and s["lung_volume_l"] > 3.45  # still filling, and deep for a 4 s inhale (rest is 2.8 L)
+    b.cue("exhale", 4.0)
+    assert b.state()["phase"] == "exhale"
+    for _ in range(int(4.2 / 0.05)):
+        b.step(0.05)
+    assert b.state()["lung_volume_l"] < 2.95  # emptied with the movement
+    assert abs(b.state()["rate_bpm"] - 7.5) < 0.5  # the movement's pace goes on between cues
+    with pytest.raises(ValueError):
+        b.cue("hold", 2.0)
+
+
+def test_the_body_shapes_the_breath():
+    """A fold compresses the belly (the ribs take over, the pressure rises); raised arms open the ribs (no pressure)."""
+    def shares(**kw):
+        b = Breath(seed=6)
+        b.set_pattern("abdominal")
+        for _ in range(int(30 / 0.05)):
+            b.step(0.05, **kw)
+        s = b.state()
+        return s["abdomen_share"], s["abdominal_pressure_cmh2o"]
+    plain, folded, raised = shares(), shares(belly_tension=0.6), shares(rib_open=1.0)
+    assert folded[0] < plain[0] - 0.2 and folded[1] > plain[1] + 4
+    assert raised[0] < plain[0] - 0.15 and abs(raised[1] - plain[1]) < 1

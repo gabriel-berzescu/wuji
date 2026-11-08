@@ -51,6 +51,14 @@ minutes, as in the relaxation response: the breath slows from about 14 to about 
 reaching the lungs' depths unchanged so CO₂ holds, oxygen use falls a little and the heart settles a few beats. Sources
 are cited in `engine/src/wuji/breath.py`.
 
+**Breath and movement are one.** Every movement can carry its breath (`breath: "inhale"` while rising or opening,
+`"exhale"` while sinking, closing or putting out force): that phase begins with the movement and lasts as long, and the forms
+cue every movement this way. The body shapes the breath in return: a forward fold compresses the belly, so the breath moves
+to the ribs and the abdominal pressure rises; arms raised overhead open the rib cage. And the diaphragm is a muscle among the
+others: its effort is felt with theirs ("Working: diaphragm 30%, …"), and the pressure it builds in the belly gives the
+lumbar spine a small extension moment, so the back's extensors work a little less (Daggfeldt and Thorstensson 1997; Hodges
+et al. 2005).
+
 **The felt sense.** What a body's own sensors would carry, in numbers and in plain words: where the weight rests in each foot
 (heel, middle, forefoot near the bubbling well, toes, inner or outer edge), which regions work and how hard, what is held beyond
 need, where something is stretched, sway, the breath, the heart.

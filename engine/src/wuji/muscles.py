@@ -85,9 +85,10 @@ class MuscleSolver:
         return np.array([rows[v] for v in range(m.nv)])
 
     def solve(self, qpos: np.ndarray, qvel: np.ndarray, qacc: np.ndarray, floor: np.ndarray | None = None,
-              loaded: dict | None = None) -> Solution:
+              loaded: dict | None = None, external: np.ndarray | None = None) -> Solution:
         """floor: per-muscle lower bound on activation (tension held). loaded: foot -> True (on the ground), "forefoot"
-        (on tiptoe) or False (lifted)."""
+        (on tiptoe) or False (lifted). external: generalised forces (nv) acting besides muscles and ground, which the
+        muscles then need not provide (the abdominal pressure's extension moment on the lumbar spine)."""
         m, d, a = self.m, self.d, self.a
         nu, nv = m.nu, m.nv
         d.qpos[:], d.qvel[:], d.qacc[:] = qpos, qvel, qacc
@@ -132,7 +133,7 @@ class MuscleSolver:
         n = nu + nf + nr
         Jc = np.hstack([J.T for J in jacs]) * self.F_UNIT if nc else np.zeros((nv, 0))
         A_eq = sparse.hstack([sparse.csc_matrix(T.T @ A_mus), sparse.csc_matrix(T.T @ Jc), sparse.identity(nr)])
-        rhs = T.T @ (tau - b_mus)
+        rhs = T.T @ (tau - b_mus - (external if external is not None else 0.0))
 
         rows, lo, hi = [A_eq], [rhs], [rhs]
         # friction pyramids

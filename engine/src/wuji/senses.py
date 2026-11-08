@@ -48,6 +48,12 @@ class Senses:
         self.sway_history: list[np.ndarray] = []
         self.noticed: dict[str, object] = {}  # what the practitioner last noticed: each part's meaning (see ambient)
         self.noticed_raw: dict[str, object] = {}  # and the numbers behind it, for hysteresis
+        self.diaphragm_peak = 0.0  # how hard the diaphragm works per breath (each breath's peak, fading over ~8 s)
+
+    def note_breath(self, activation: float, dt: float) -> None:
+        """The diaphragm's activation this frame: kept as each breath's peak, since a body knows how hard it breathes,
+        not where in the cycle it is (the cycle is not change)."""
+        self.diaphragm_peak = max(float(activation), self.diaphragm_peak * float(np.exp(-dt / 8.0)))
 
     def note_sway(self) -> None:
         b = self.body
@@ -90,6 +96,8 @@ class Senses:
         regions = {r: round(region_effort(s.act, f0, a.muscle_region == r), 4) for r in REGION_ORDER}
         need = b.minimum if b.minimum is not None else s
         needed = {r: round(region_effort(need.act, f0, a.muscle_region == r), 4) for r in REGION_ORDER}
+        if breath_state and breath_state.get("diaphragm") is not None:  # the breath's own muscle works with the rest
+            regions["diaphragm"] = needed["diaphragm"] = round(max(self.diaphragm_peak, float(breath_state["diaphragm"])), 4)
         passive = np.array([-mujoco.mju_muscleBias(d.actuator_length[i], m.actuator_lengthrange[i], m.actuator_acc0[i],
                                                    m.actuator_biasprm[i, :9]) for i in range(m.nu)])
         stretch = {r: round(float(passive[a.muscle_region == r].sum() / f0[a.muscle_region == r].sum()), 4) for r in REGION_ORDER}
@@ -161,7 +169,7 @@ class Senses:
         close = {
             "weight": lambda old, new: abs(old - new) < 0.04,
             "sway": lambda old, new: abs(old - new) < 1.5,
-            "working": lambda old, new: all(abs(old[r] - new[r]) < 0.015 for r in new),
+            "working": lambda old, new: all(abs(old.get(r, -1.0) - new[r]) < 0.015 for r in new),
         }
         for i, (key, meaning, words) in enumerate(parts):
             if key in close and key in self.noticed and key in self.noticed_raw and self.noticed[key] != meaning                     and close[key](self.noticed_raw[key], raw[key]):

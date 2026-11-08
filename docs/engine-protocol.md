@@ -91,6 +91,7 @@ Where the body should go, and how fast. Every field is optional; a field left ou
   "twist": 0.0,
   "side_bend": 0.0,
   "rise": 0.0,
+  "breath": "inhale" | "exhale",
   "head": "suspended" | "tucked" | "turned_left" | "turned_right",
   "tailbone": 0.5,
   "over": 4.0
@@ -100,6 +101,8 @@ Where the body should go, and how fast. Every field is optional; a field left ou
 - `weight`: the share on the **left** foot, 0..1 (0.5 is centred).
 - `sink`: how deep the knees bend, 0 (straight) .. 1 (the deepest the stance allows).
 - `arms` sets both arms (and clears a one-arm shape); `arm_left` / `arm_right` set one arm alone.
+- `breath`: breath-led movement. That phase of the breath begins now, with the movement, and lasts `over` seconds, as deep
+  as the pace needs; between cues the breath keeps that pace. The forms cue every movement.
 - `bend`: the trunk folding forward at the waist and hips, 0 .. 1 (about 100°). `twist`: turning, -1 .. 1, positive to the
   left (about 40°; the head turns with the chest, as this body has no neck joints). `side_bend`: leaning, -1 .. 1, positive
   to the left (about 20°). `rise`: up on the toes, 0 .. 1 (heels about 22° up, the weight carried forward over the balls of

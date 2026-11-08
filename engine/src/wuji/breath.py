@@ -61,6 +61,13 @@ Heart
     slowing (Foster and Sheel 2005), and a little slow noise keeps it alive.
     Hypocapnia below about 32 mmHg is felt as light-headedness and tingling (Laffey and Kavanagh 2002).
 
+Led by the movement, shaped by the body
+    In qigong the breath and the movement are one: in while rising or opening, out while sinking or closing. cue(phase,
+    seconds) begins that phase now, for as long as the movement it goes with, as deep as that pace needs; between cues the
+    breath goes on at the same pace. The body shapes the breath too: a forward fold compresses the belly (the breath moves
+    to the ribs and the abdominal pressure rises, as when the abdominal wall is held), and arms raised overhead lift and
+    open the rib cage, so the ribs take a larger share (rib_open).
+
 Settling
     When the practitioner stays still and holds nothing, the body settles over minutes (the relaxation response; Benson
     et al. 1974): the natural breath slows and deepens toward 6-8 breaths/min with alveolar ventilation unchanged, so CO2
@@ -192,6 +199,7 @@ class Breath:
         self._effort = 0.0
         self._met = 1.0
         self._calm = 0.0  # how settled the body is (see Settling), 0..1
+        self._rib_open = 0.0  # how far raised arms open the rib cage, 0..1
         self._ve = VT0 * F0
         self._mech: dict = {}
         # gas
@@ -285,22 +293,45 @@ class Breath:
         line += "; the hold is released." if released else "; the change begins with the next breath."
         return line[0].upper() + line[1:]
 
+    def cue(self, phase: str, seconds: float) -> str:
+        """Breath-led movement: begin this phase of the breath now, lasting `seconds` (the movement it goes with). The
+        inhale fills as deep as this pace needs, the exhale empties to rest; between cues the breath goes on at this pace.
+        A cue ends a hold. Returns one plain line."""
+        if phase not in ("inhale", "exhale"):
+            raise ValueError(f"a breath cue is 'inhale' or 'exhale', not {phase!r}")
+        seconds = _clip(float(seconds), 0.5, 30.0)
+        if self._phase == "hold":
+            self._release_hold()
+        self._hold_pending = False
+        ti, te, tp = self._paced if self._paced else (seconds, seconds, 0.0)
+        if phase == "inhale":
+            self._paced = (seconds, te if self._paced else seconds, 0.0)
+            self._start_breath()
+            return f"Breathing in with the movement, {_secs(seconds)}."
+        self._paced = (ti if self._paced else seconds, seconds, 0.0)
+        self._begin("exhale", seconds, 0.0)
+        return f"Breathing out with the movement, {_secs(seconds)}."
+
     @staticmethod
     def _hold_words(hold: float | None) -> str:
         return f"for {_secs(hold)}" if hold else "until released"
 
     # ---------------------------------------------------------------- time
 
-    def step(self, dt: float, effort: float = 0.0, belly_tension: float = 0.0, settled: bool = False) -> list[dict]:
+    def step(self, dt: float, effort: float = 0.0, belly_tension: float = 0.0, settled: bool = False,
+             rib_open: float = 0.0) -> list[dict]:
         """Advance dt seconds. effort: whole-body muscular effort 0..1 (raises metabolic CO2 and breathing drive).
         belly_tension: abdominal tension the practitioner holds, 0..1 (stiffens the abdomen, shifting the breath to the
         rib cage). settled: the practitioner is still and holds nothing (the body settles over minutes; see Settling).
+        rib_open: how far raised arms open the rib cage, 0..1 (the ribs take more of the breath, without the pressure a
+        held belly brings).
         Returns protocol events, rare: an urge rising during a hold, or the breath settling after it."""
         events: list[dict] = []
         if not dt or dt <= 0:
             return events
         effort = _clip(float(effort), 0.0, 1.0)
         tension = _clip(float(belly_tension), 0.0, 1.0)
+        self._rib_open += (_clip(float(rib_open), 0.0, 1.0) - self._rib_open) * min(1.0, dt / 1.0)
         n = max(1, math.ceil(dt / H_MAX - 1e-9))
         h = dt / n
         target = 1.0 if settled else 0.0
@@ -418,7 +449,7 @@ class Breath:
         p_insp = max(0.0, self._p_mus)
         p_exp = max(0.0, -self._p_mus - 0.5)
         s = self._s_ab
-        s_eff = s * (1.0 - 0.75 * tension) if s > 0 else s
+        s_eff = s * (1.0 - 0.75 * tension) * (1.0 - 0.35 * self._rib_open) if s > 0 else s
         v_ab = s_eff * self._V
         v_rc = self._V - v_ab
         descent = (max(v_ab, 0.0) + 0.4 * max(v_rc, 0.0)) / DI_AREA

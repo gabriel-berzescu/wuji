@@ -37,6 +37,7 @@ REGION_ORDER = tuple(REGIONS)
 REGION_WORDS = {
     "feet": "feet", "calves": "calves", "thighs": "thighs", "hips": "hips (glutes, psoas: the kua)",
     "lower_back": "lower back", "belly": "belly", "shoulders": "shoulders", "arms": "arms", "hands": "hands",
+    "diaphragm": "diaphragm",
 }
 
 

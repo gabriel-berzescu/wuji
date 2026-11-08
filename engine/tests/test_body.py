@@ -142,3 +142,29 @@ def test_the_ambient_sense_habituates(body):
     # an explicit sense counts as noticing everything
     sense.read(detail="brief")
     assert sense.read(detail="ambient")["text"] == "Wuji stance as before; nothing new."
+
+
+def test_the_bellys_pressure_eases_the_lower_back(body):
+    """Abdominal pressure gives the lumbar spine an extension moment: the back's extensors need to do a little less."""
+    body.reset()
+    body.intend(sink=0.6, arms="embrace", tailbone=1.0, over=2.0)
+    settle(body, 4.0)
+    reg = body.a.muscle_region == "lower_back"
+    body.abdominal_pressure = 8.0
+    rest = region_effort(settle(body, 1.5).act, body.a.f0, reg)
+    body.abdominal_pressure = 30.0
+    pressed = region_effort(settle(body, 1.5).act, body.a.f0, reg)
+    body.abdominal_pressure = 8.0
+    assert pressed < rest - 0.005
+
+
+def test_the_diaphragm_works_with_the_rest(body):
+    """The breath's own muscle among the working regions, at each breath's peak (the cycle itself is not change)."""
+    body.reset()
+    settle(body, 3.0)
+    sense = Senses(body)
+    for a in (0.05, 0.45, 0.1, 0.0, 0.05):  # one deep breath: up, then down to nothing
+        sense.note_breath(a, 0.5)
+    out = sense.read(breath_state={"diaphragm": 0.0, "pattern": "abdominal"}, breath_felt=["Exhale."])
+    assert out["body"]["effort"]["regions"]["diaphragm"] > 0.35
+    assert "diaphragm" in out["text"]
