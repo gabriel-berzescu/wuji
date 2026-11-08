@@ -129,9 +129,12 @@ class Engine:
         steps = FORMS[f["name"]]
         while f["next"] < len(steps) and self.body.t - f["t0"] >= steps[f["next"]][0]:
             _, op, args = steps[f["next"]]
-            text = self.apply(op, args)
             f["next"] += 1
-            self.event("form", {"name": f["name"], "step": f["next"], "of": len(steps), "done": False, "text": text}, every=0.0)
+            if op == "announce":  # the form speaks only here (a brocade begins) and at its end: a few calls, not a stream
+                self.event("form", {"name": f["name"], "step": f["next"], "of": len(steps), "done": False,
+                                    "text": args["text"]}, every=0.0)
+            else:
+                self.apply(op, args)
         if f["next"] >= len(steps) and not self.body.moving:
             self.event("form", {"name": f["name"], "step": len(steps), "of": len(steps), "done": True,
                                 "text": f"The form {f['name'].replace('_', ' ')} is complete."}, every=0.0)
@@ -201,7 +204,7 @@ class Engine:
         last = time.monotonic()
         while self.running:
             start = time.monotonic()
-            dt = min(0.1, start - last)
+            dt = min(1.0, start - last)  # the body keeps true time through a heavy frame; only a stall is skipped
             last = start
             self.frame(dt)
             while True:

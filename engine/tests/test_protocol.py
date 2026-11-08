@@ -73,7 +73,7 @@ def test_intend_tension_breathe_and_errors(engine):
 
 def test_a_form_reports_its_steps(engine):
     r = engine.call("form", name="wuji")
-    assert r["ok"] and r["result"]["steps"] == 3
+    assert r["ok"] and r["result"]["steps"] == 4
     deadline = time.monotonic() + 12
     while time.monotonic() < deadline and not any(e["event"] == "form" and e["data"]["done"] for e in engine.events):
         engine.call("sense")
