@@ -40,6 +40,7 @@ export const TOOLS: ToolDefinition[] = [
         sink: unit('How deep the knees bend: 0 straight .. 1 the deepest this stance allows.'),
         arms: { type: 'string', enum: ['hang', 'embrace', 'lift_sky', 'press_down', 'draw_bow_left', 'draw_bow_right'], description: 'What the arms do.' },
         head: { type: 'string', enum: ['suspended', 'tucked', 'turned_left', 'turned_right'], description: 'The carriage of the head.' },
+        tailbone: unit('How far the tailbone drops (song yao: the waist lengthens and hangs): 0 only as much as sinking brings .. 1 dropped as far as it goes.'),
         over: seconds('Seconds to arrive (minimum-jerk movement).'),
       },
       additionalProperties: false,

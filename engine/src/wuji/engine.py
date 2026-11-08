@@ -156,7 +156,7 @@ class Engine:
         b = self.body
         if op == "intend":
             return b.intend(stance=args.get("stance"), weight=args.get("weight"), sink=args.get("sink"),
-                            arms=args.get("arms"), over=args.get("over", 3.0)) + _head_note(args.get("head"))
+                            arms=args.get("arms"), tailbone=args.get("tailbone"), over=args.get("over", 3.0)) + _head_note(args.get("head"))
         if op == "tension":
             return b.set_tension(args.get("region", "all"), float(args.get("level", 0.0)))
         if op == "breathe":

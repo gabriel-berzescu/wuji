@@ -15,7 +15,7 @@ import numpy as np
 
 from .anatomy import Anatomy, REGION_ORDER, calibrate_rest, load_model
 from .muscles import MuscleSolver, Solution
-from .posture import ARMS, STANCES, Posture, PostureSolver
+from .posture import ARMS, STANCES, Posture, PostureSolver, pelvic_tilt
 
 TENSION_FLOOR = 0.15  # activation a fully held region keeps (co-contraction), on top of what the posture needs
 FOOT_LIFT = 0.06  # how high a stepping foot rises (m)
@@ -69,10 +69,11 @@ class Body:
     # ---------- intentions ----------
 
     def _pose_of(self, p: Posture, feet: dict | None = None) -> dict:
-        return {"weight": p.weight, "knee": p.sink * STANCES[p.stance]["max_knee"], "arms": dict(ARMS[p.arms]),
+        knee = p.sink * STANCES[p.stance]["max_knee"]
+        return {"weight": p.weight, "knee": knee, "tilt": pelvic_tilt(knee, p.tailbone), "arms": dict(ARMS[p.arms]),
                 "feet": dict(feet or self.posture_solver.feet_for(p.stance)), "lift": {"left": 0.0, "right": 0.0}}
 
-    def intend(self, stance=None, weight=None, sink=None, arms=None, over: float = 3.0) -> str:
+    def intend(self, stance=None, weight=None, sink=None, arms=None, tailbone=None, over: float = 3.0) -> str:
         """Plans the movement to a new posture; returns what will happen, in a sentence."""
         if stance is not None and stance not in STANCES:
             raise ValueError(f"unknown stance {stance!r} (known: {', '.join(STANCES)})")
@@ -82,8 +83,10 @@ class Body:
             raise ValueError("weight is the share on the left foot, 0..1")
         if sink is not None and not 0.0 <= sink <= 1.0:
             raise ValueError("sink is 0 (straight) .. 1 (the deepest the stance allows)")
+        if tailbone is not None and not 0.0 <= tailbone <= 1.0:
+            raise ValueError("tailbone is 0 (as the knees bring it) .. 1 (dropped as far as it goes)")
         over = max(0.5, float(over))
-        target = self.posture.merged(stance=stance, weight=weight, sink=sink, arms=arms)
+        target = self.posture.merged(stance=stance, weight=weight, sink=sink, arms=arms, tailbone=tailbone)
         start = self._current_pose()
         self.segments.clear()
         t = self.t
@@ -114,6 +117,8 @@ class Body:
             parts.append(f"sinking to {sink:.0%} of the stance's depth")
         if arms is not None:
             parts.append(f"arms to {arms.replace('_', ' ')}")
+        if tailbone is not None:
+            parts.append("the tailbone dropping, the waist lengthening" if tailbone > 0 else "the pelvis returning to neutral")
         return f"{what.capitalize()}{': ' + ', '.join(parts) if parts else ''}, over {over:g} seconds."
 
     def set_tension(self, region: str, level: float) -> str:
@@ -179,7 +184,7 @@ class Body:
         sway = np.array([0.5 * self.sway[0], self.sway[1] + self.breath_shift])  # less side to side than front to back
         self.q_prev = self.q
         self.q = self.posture_solver.solve(now, feet=pose["feet"], lift=pose["lift"], knee_deg=pose["knee"],
-                                           arms=pose["arms"], iterations=6, sway=sway)
+                                           arms=pose["arms"], iterations=6, sway=sway, tilt_deg=pose["tilt"])
         self.loaded = {s: pose["lift"][s] < 0.005 for s in ("left", "right")}
         qvel = np.zeros(self.m.nv)
         mujoco.mj_differentiatePos(self.m, qvel, dt, self.q_prev, self.q)
@@ -212,6 +217,7 @@ def _blend(a: dict, b: dict, s: float) -> dict:
     return {
         "weight": lerp(a["weight"], b["weight"]),
         "knee": lerp(a["knee"], b["knee"]),
+        "tilt": lerp(a["tilt"], b["tilt"]),
         "arms": {k: lerp(a["arms"][k], b["arms"][k]) for k in a["arms"]},
         "feet": {k: lerp(a["feet"][k], b["feet"][k]) for k in a["feet"]},
         "lift": {k: lerp(a["lift"][k], b["lift"][k]) for k in a["lift"]},

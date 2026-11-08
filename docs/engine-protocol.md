@@ -80,12 +80,15 @@ Where the body should go, and how fast. Every field is optional; a field left ou
   "sink": 0.3,
   "arms": "hang" | "embrace" | "lift_sky" | "press_down" | "draw_bow_left" | "draw_bow_right",
   "head": "suspended" | "tucked" | "turned_left" | "turned_right",
+  "tailbone": 0.5,
   "over": 4.0
 }
 ```
 
 - `weight`: the share on the **left** foot, 0..1 (0.5 is centred).
 - `sink`: how deep the knees bend, 0 (straight) .. 1 (the deepest the stance allows).
+- `tailbone`: how far the tailbone drops, 0 (only as much as sinking brings) .. 1 (12° more posterior pelvic tilt): song yao,
+  the lumbar curve lengthening.
 - `over`: seconds to arrive there; the body moves smoothly (minimum jerk).
 
 → `{"accepted": true, "arrives_in": 4.0, "text": "Shifting weight toward the left foot and sinking a little, over four seconds."}`

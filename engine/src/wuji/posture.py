@@ -39,6 +39,7 @@ class Posture:
     weight: float = 0.5  # share on the left foot
     sink: float = 0.25  # 0 straight .. 1 the deepest the stance allows
     arms: str = "hang"
+    tailbone: float = 0.0  # 0 .. 1: how far the tailbone drops (posterior pelvic tilt), beyond what sinking brings
 
     def merged(self, **changes) -> "Posture":
         return replace(self, **{k: v for k, v in changes.items() if v is not None})
@@ -108,7 +109,8 @@ class PostureSolver:
         return poses
 
     def solve(self, posture: Posture, feet: dict | None = None, iterations: int = 30, sway: np.ndarray | None = None,
-              lift: dict | None = None, knee_deg: float | None = None, arms: dict | None = None) -> np.ndarray:
+              lift: dict | None = None, knee_deg: float | None = None, arms: dict | None = None,
+              tilt_deg: float | None = None) -> np.ndarray:
         """Joint angles (qpos) for a posture, warm-started from the last solution.
 
         feet: sideways foot positions (default: the stance's); lift: how high each foot is raised (stepping); knee_deg: the
@@ -118,7 +120,7 @@ class PostureSolver:
         stance = STANCES[posture.stance]
         feet = self.foot_poses(feet or self.feet_for(posture.stance), lift)
         knee = (posture.sink * stance["max_knee"] if knee_deg is None else knee_deg) * DEG
-        tilt = 6.0 * min(1.0, knee / (45 * DEG)) * DEG  # the tailbone drops as the knees bend
+        tilt = (pelvic_tilt(knee / DEG, posture.tailbone) if tilt_deg is None else tilt_deg) * DEG
         pelvis_target = _quat_mul(_axis_quat(LEFTWARD, -tilt), self.pelvis_quat0)
         lx, rx = feet["left"][1] @ LEFTWARD, feet["right"][1] @ LEFTWARD
         com_target = np.array([rx + posture.weight * (lx - rx), self._com_ahead(feet)])
@@ -204,6 +206,12 @@ class PostureSolver:
                 q[a.qadr[f"md{f}_flexion_{side}"]] = s["curl"] * 25 * DEG
         self._clip(q)
         a.couple(q)
+
+
+def pelvic_tilt(knee_deg: float, tailbone: float) -> float:
+    """Posterior pelvic tilt (deg): the tailbone drops a little as the knees bend, and further when asked (song yao: the
+    lumbar curve lengthens and the waist hangs instead of holding)."""
+    return 6.0 * min(1.0, knee_deg / 45.0) + 12.0 * min(1.0, max(0.0, tailbone))
 
 
 def _quat_mul(a: np.ndarray, b: np.ndarray) -> np.ndarray:
