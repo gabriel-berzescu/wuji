@@ -12,7 +12,7 @@ back, unasked, before every thought, the way proprioception is simply there:
 ```
 [wuji] Wuji stance, knees softly bent (18°).
 Weight 49% left, 51% right; through the middle of both feet.
-Working: shoulders 19%, lower back 10%, arms 6%, calves 6%; the rest quiet.
+Working: shoulders 19%, calves 12%, lower back 10%, arms 6%; the rest quiet.
 Stretch in the arms.
 Steady, barely swaying.
 Slow exhale through the nose, the belly sinking.
@@ -34,13 +34,21 @@ be. A change of stance is a real step: the weight goes onto one leg, the other f
 finds the activations of all 416 muscles, the ground's force under each sole, and the forces in the joint couplings, minimising
 the sum of squared activations. That is the classic physiological criterion, and it is also qigong's *song* (松): no more effort
 than the posture needs. Tension the practitioner holds raises a region's activation floor (co-contraction), and the body says
-what it costs against what the posture needs. Quiet standing comes out as it does in real bodies: the soleus at a few percent,
-the back nearly silent; a horse stance loads the quadriceps; one-leg standing loads the glutes.
+what it costs against what the posture needs. Quiet standing comes out as it does in real bodies: the soleus working gently
+(about a sixth of its strength), the back nearly silent; rising onto the toes puts the calves near a quarter; a horse stance
+loads the quadriceps; one-leg standing loads the glutes.
+
+**Strength like a person's.** Effort is a muscle's share of its strength, so the strengths have to be right. The published
+forces are uneven against people: the calves were two and a half times as strong as healthy men's, the hamstrings over three
+times, the shoulders a third weaker. Wuji scales each muscle group so the body's maximal joint torques match those measured in
+healthy men of its size (84 kg), from ankle to elbow (Harbo et al. 2012, Anderson et al. 2007 and others, cited in
+`engine/src/wuji/anatomy.py`; fitted by `engine/tools/fit_strength.py`), so efforts read like EMG's share of a maximal
+contraction.
 
 **Relaxation needs slack.** The published model leaves many muscles past their passive onset when standing (over 4 kN of passive
 pull with nothing active), which is fine for training walking policies and wrong for a body meant to feel relaxation. Wuji
-recalibrates only the passive part of each muscle to relaxed standing; active strength stays as published, and stretching still
-builds passive tension, which the body reports by region.
+recalibrates only the passive part of each muscle to relaxed standing (active strength is set by the calibration above), and
+stretching still builds passive tension, which the body reports by region.
 
 **The breath.** A lumped respiratory model: a pressure balance (elastance × volume + resistance × flow), the Konno–Mead split
 between rib cage and belly, the diaphragm descending and pushing the belly out (or drawn in, in reverse breathing), abdominal
@@ -147,14 +155,14 @@ details: environment variables, the grant, how push events wake a session.
 ## Develop
 
 ```
-cd engine && uv run pytest           # the body, the breath, the protocol, the viewer (41 tests)
+cd engine && uv run pytest           # the body, the breath, the protocol, the viewer, the strengths (64 tests)
 cd server && npm test                # the MCPL server against a fake engine
 cd server && npm run live            # the whole chain against the real body
 ```
 
 The engine protocol between the two halves is in `docs/engine-protocol.md`. `engine/tools/` has the probes used to build it:
 `probe.py` (what the model is made of, and how fast it runs), `anatomy.py` (joints, contacts, muscles by body), `fit_arms.py`
-(the arm shapes).
+(the arm shapes), `fit_strength.py` (the muscle groups' strengths, against measured joint torques).
 
 ## Credits
 
