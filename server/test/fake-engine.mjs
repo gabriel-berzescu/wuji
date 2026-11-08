@@ -43,6 +43,7 @@ function senseResult(detail) {
     'Heart 64.',
   ];
   if (detail === 'full') lines.push('Knees 12°, hips 6°.');
+  if (detail === 'ambient') return { t: 1, text: 'Wuji stance as before; nothing new.', changed: [] };
   return {
     t: t(),
     life,

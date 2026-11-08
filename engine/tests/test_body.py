@@ -113,3 +113,32 @@ def test_bad_intentions_are_refused(body):
         body.intend(weight=1.5)
     with pytest.raises(ValueError):
         body.set_tension("ears", 0.5)
+
+
+def test_the_ambient_sense_habituates(body):
+    """Injected before every thought, the felt sense says only what changed, as a body habituates: the whole picture the
+    first time, one quiet line while nothing changes, then only the change, and a word when something lets go."""
+    body.reset()
+    settle(body, 4.0)  # arrived: no longer moving
+    sense = Senses(body)
+    first = sense.read(detail="ambient")["text"].splitlines()
+    assert first[0].startswith("Wuji stance") and len(first) >= 3  # nothing noticed yet: the whole picture
+    for _ in range(5):
+        body.step(0.04)
+        sense.note_sway()
+    quiet = sense.read(detail="ambient")
+    assert quiet["text"] == "Wuji stance as before; nothing new." and quiet["changed"] == []
+    body.intend(weight=0.8, over=1.0)
+    settle(body, 2.0)
+    shifted = sense.read(detail="ambient")
+    assert "weight" in shifted["changed"] and "Weight" in shifted["text"]
+    assert "stance" not in shifted["changed"]  # the stance did not change, so it is not repeated
+    body.set_tension("shoulders", 0.8)
+    settle(body, 1.5)
+    assert "Holding the shoulders" in sense.read(detail="ambient")["text"]
+    body.set_tension("shoulders", 0.0)
+    settle(body, 1.5)
+    assert "The shoulders let go." in sense.read(detail="ambient")["text"]
+    # an explicit sense counts as noticing everything
+    sense.read(detail="brief")
+    assert sense.read(detail="ambient")["text"] == "Wuji stance as before; nothing new."

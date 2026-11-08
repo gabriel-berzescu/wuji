@@ -125,7 +125,7 @@ describe('tools', () => {
 });
 
 describe('felt sense on beforeInference', () => {
-  it('injects the brief sense at beforeUser, tagged [wuji], when granted', () => withServer({}, {}, async (h) => {
+  it('injects the ambient sense (what changed) at beforeUser, tagged [wuji], when granted', () => withServer({}, {}, async (h) => {
     await h.initialize();
     await h.grant(FULL_GRANT);
     await h.call('sense'); // the engine is up
@@ -135,7 +135,16 @@ describe('felt sense on beforeInference', () => {
     const inj = r.contextInjections[0];
     assert.equal(inj.position, 'beforeUser');
     assert.equal(inj.namespace, 'wuji');
-    assert.match(inj.content[0].text, /^\[wuji\] Standing in wuji/);
+    assert.match(inj.content[0].text, /^\[wuji\] Wuji stance as before; nothing new\./);
+    assert.ok(h.ops().some((o) => o.op === 'sense' && o.args.detail === 'ambient'));
+  }));
+
+  it('injects the brief sense every turn with WUJI_FELT_SENSE=brief', () => withServer({}, { WUJI_FELT_SENSE: 'brief' }, async (h) => {
+    await h.initialize();
+    await h.grant(FULL_GRANT);
+    await h.call('sense');
+    const r = await h.beforeInference();
+    assert.match(r.contextInjections[0].content[0].text, /^\[wuji\] Standing in wuji/);
     assert.ok(h.ops().some((o) => o.op === 'sense' && o.args.detail === 'brief'));
   }));
 

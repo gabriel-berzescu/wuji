@@ -24,6 +24,8 @@ export interface WujiServerOptions {
   log?: (...a: unknown[]) => void;
   /** How long the felt-sense hook may wait for the engine before it injects nothing. */
   senseBudgetMs?: number;
+  /** What the felt sense injects before each turn: 'ambient' (what changed, as a body habituates) or 'brief'. */
+  feltSense?: 'ambient' | 'brief';
   /** How long a tool call may wait for the engine (including for it to start). */
   toolTimeoutMs?: number;
   pushMinIntervalMs?: number;
@@ -42,6 +44,7 @@ export class WujiServer {
   private policy: Policy = NO_POLICY;
   private readonly log: (...a: unknown[]) => void;
   private readonly senseBudgetMs: number;
+  private readonly feltSense: 'ambient' | 'brief';
   private readonly toolTimeoutMs: number;
   private readonly maxInjectionChars: number;
   private readonly throttle: SignalThrottle<PushEventParams>;
@@ -50,6 +53,7 @@ export class WujiServer {
   constructor(private readonly engine: Engine, private readonly opts: WujiServerOptions) {
     this.log = opts.log ?? (() => {});
     this.senseBudgetMs = opts.senseBudgetMs ?? 1_500;
+    this.feltSense = opts.feltSense ?? 'ambient';
     this.toolTimeoutMs = opts.toolTimeoutMs ?? 20_000;
     this.maxInjectionChars = opts.maxInjectionChars ?? 1_500;
     this.throttle = new SignalThrottle<PushEventParams>({
@@ -174,7 +178,7 @@ export class WujiServer {
     if (!featureSetState(FS_FELT_SENSE, this.policy).active) return result;
     let sense: Record<string, unknown>;
     try {
-      sense = await this.engine.request('sense', { detail: 'brief' }, { timeoutMs: this.senseBudgetMs, waitForReady: false });
+      sense = await this.engine.request('sense', { detail: this.feltSense }, { timeoutMs: this.senseBudgetMs, waitForReady: false });
     } catch (e) {
       this.log(`felt sense skipped: ${(e as Error).message}`);
       return result;

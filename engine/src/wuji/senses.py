@@ -46,6 +46,8 @@ class Senses:
     def __init__(self, body: Body) -> None:
         self.body = body
         self.sway_history: list[np.ndarray] = []
+        self.noticed: dict[str, object] = {}  # what the practitioner last noticed: each part's meaning (see ambient)
+        self.noticed_raw: dict[str, object] = {}  # and the numbers behind it, for hysteresis
 
     def note_sway(self) -> None:
         b = self.body
@@ -101,10 +103,13 @@ class Senses:
                                                      "ankle_angle_l", "ankle_angle_r", "flex_extension")}
         feasible = s.root_residual < 20 and s.joint_residual < 10
 
-        lines = []
+        # each part of the felt sense: (key, its meaning, its words). The meaning is what counts as a change for `ambient`:
+        # buckets coarse enough that fluctuation (the breath's cycle, sway within its range) is not change.
+        parts: list[tuple[str, object, str]] = []
         knee = 0.5 * (joints["knee_angle_l"] + joints["knee_angle_r"])
         bend = "straight" if knee < 4 else "softly bent" if knee < 20 else "bent" if knee < 45 else "deeply bent"
-        lines.append(f"{b.posture.stance.capitalize()} stance, knees {bend} ({knee:.0f}°){', moving' if b.moving else ''}.")
+        parts.append(("stance", (b.posture.stance, bend, b.moving),
+                      f"{b.posture.stance.capitalize()} stance, knees {bend} ({knee:.0f}°){', moving' if b.moving else ''}."))
         lt, rt = feet_text["left"], feet_text["right"]
         edges = lambda ft: f", on the {ft[1]} edge" if ft[1] else ""
         if lt and rt:
@@ -112,26 +117,54 @@ class Senses:
                 where = f"through {BOTH[lt[0]]}{edges(lt)}"
             else:
                 where = f"the left foot on {ONE[lt[0]]}{edges(lt)}, the right on {ONE[rt[0]]}{edges(rt)}"
-            lines.append(f"Weight {weight['left']:.0%} left, {weight['right']:.0%} right; {where}.")
+            words = f"Weight {weight['left']:.0%} left, {weight['right']:.0%} right; {where}."
         else:
             on, ft = ("left", lt) if lt else ("right", rt)
-            lines.append(f"All the weight on the {on} foot, on {ONE[ft[0]]}{edges(ft)}; the other foot is free.")
+            words = f"All the weight on the {on} foot, on {ONE[ft[0]]}{edges(ft)}; the other foot is free."
+        parts.append(("weight", (round(weight["left"] * 20), lt, rt), words))
         working = sorted(((v, r) for r, v in regions.items() if v >= QUIET), reverse=True)
         if working:
-            lines.append("Working: " + ", ".join(f"{REGION_WORDS[r]} {v:.0%}" for v, r in working[:4]) + "; the rest quiet.")
+            parts.append(("working", tuple((r, round(v * 100 / 3)) for v, r in working[:4]),
+                          "Working: " + ", ".join(f"{REGION_WORDS[r]} {v:.0%}" for v, r in working[:4]) + "; the rest quiet."))
         else:
-            lines.append("Every region quiet: the posture rests on the bones.")
+            parts.append(("working", (), "Every region quiet: the posture rests on the bones."))
         for r, v in held.items():
-            lines.append(f"Holding the {REGION_WORDS[r]} ({v:.0%} tension): working at {regions[r]:.0%} of their strength "
-                         f"where the posture needs {needed[r]:.0%}.")
+            parts.append((f"held:{r}", (round(v, 2), round(regions[r] * 100 / 3)),
+                          f"Holding the {REGION_WORDS[r]} ({v:.0%} tension): working at {regions[r]:.0%} of their strength "
+                          f"where the posture needs {needed[r]:.0%}."))
         stretched = [r for r, v in sorted(stretch.items(), key=lambda kv: -kv[1]) if v > 0.02][:2]
         if stretched:
-            lines.append("Stretch in the " + " and ".join(REGION_WORDS[r] for r in stretched) + ".")
-        lines.append("Steady, barely swaying." if sway_mm < 3 else f"Swaying gently, about {sway_mm:.0f} mm.")
+            parts.append(("stretch", tuple(stretched), "Stretch in the " + " and ".join(REGION_WORDS[r] for r in stretched) + "."))
+        parts.append(("sway", 0 if sway_mm < 3 else 1 if sway_mm < 8 else 2,
+                      "Steady, barely swaying." if sway_mm < 3 else f"Swaying gently, about {sway_mm:.0f} mm."))
         if not feasible:
-            lines.append("Strained: the muscles cannot quite hold this.")
+            parts.append(("strain", True, "Strained: the muscles cannot quite hold this."))
         if breath_felt:
-            lines.extend(breath_felt)
+            bs = breath_state or {}
+            meaning = (bs.get("pattern"), bs.get("paced"), round((bs.get("rate_bpm") or 0) / 3), (bs.get("settled") or 0) > 0.6,
+                       round((bs.get("urge") or 0) * 4), bs.get("mouth"), (bs.get("co2_mmhg") or 40) < 32)
+            parts.append(("breath", meaning, chr(10).join(breath_felt)))  # its lines stay lines
+
+        # hysteresis: a part that jitters across a bucket's edge without really moving keeps the meaning last noticed
+        raw = {"weight": weight["left"], "sway": sway_mm, "working": regions}
+        close = {
+            "weight": lambda old, new: abs(old - new) < 0.04,
+            "sway": lambda old, new: abs(old - new) < 1.5,
+            "working": lambda old, new: all(abs(old[r] - new[r]) < 0.015 for r in new),
+        }
+        for i, (key, meaning, words) in enumerate(parts):
+            if key in close and key in self.noticed and key in self.noticed_raw and self.noticed[key] != meaning                     and close[key](self.noticed_raw[key], raw[key]):
+                if key != "weight" or meaning[1:] == self.noticed[key][1:]:  # the feet's zones must not have changed
+                    parts[i] = (key, self.noticed[key], words)
+        changed = [key for key, meaning, _ in parts if self.noticed.get(key, None) != meaning]
+        if detail == "ambient":
+            lines = self._ambient(parts, b.posture.stance)
+        else:
+            lines = [words for _, _, words in parts]
+        for key, meaning, _ in parts:
+            if self.noticed.get(key) != meaning or key not in self.noticed_raw:
+                self.noticed_raw[key] = raw.get(key)
+        self.noticed = {key: meaning for key, meaning, _ in parts}
 
         if detail == "full":
             lines.append("Joints: knees {:.0f}°/{:.0f}°, hips {:.0f}°/{:.0f}°, ankles {:.0f}°/{:.0f}°, lumbar {:+.0f}° (left/right)."
@@ -157,4 +190,25 @@ class Senses:
             },
             "breath": breath_state or {},
             "heart": heart,
+            "changed": changed,
         }
+
+    def _ambient(self, parts: list, stance: str) -> list[str]:
+        """What has changed since the practitioner last noticed the body, as a body habituates: a shift of weight, a region
+        starting or stopping work, tension taken up or let go, a stretch, the breath changing its pattern or settling. The
+        breath's cycle and sway within its range are not change. Nothing changed: one quiet line, never silence."""
+        before = self.noticed
+        if not before:
+            return [words for _, _, words in parts]
+        lines = [words for key, meaning, words in parts if before.get(key, None) != meaning]
+        now = {key for key, _, _ in parts}
+        for key in before:
+            if key in now:
+                continue
+            if key.startswith("held:"):
+                lines.append(f"The {REGION_WORDS[key[5:]]} let go.")
+            elif key == "stretch":
+                lines.append("The stretch has eased.")
+            elif key == "strain":
+                lines.append("The strain has passed.")
+        return lines or [f"{stance.capitalize()} stance as before; nothing new."]

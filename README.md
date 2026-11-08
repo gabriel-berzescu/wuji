@@ -55,6 +55,13 @@ are cited in `engine/src/wuji/breath.py`.
 (heel, middle, forefoot near the bubbling well, toes, inner or outer edge), which regions work and how hard, what is held beyond
 need, where something is stretched, sway, the breath, the heart.
 
+**Habituation.** A body does not keep telling you about your feet. Before each thought Wuji injects only what has changed
+since the body was last noticed: a shift of weight, a region starting or stopping work, tension taken up or let go ("The
+shoulders let go."), a stretch appearing or easing, the breath changing its pattern or settling. The breath's cycle and
+sway within its range are not change, and a part that only jitters across a threshold keeps its last meaning. When nothing
+has changed, one quiet line remains ("Wuji stance as before; nothing new."): the ground stays, it just stops talking.
+Asking with `sense` gives the whole picture and counts as noticing everything.
+
 **The MCPL face.** [MCPL](https://github.com/anima-research/mcpl) (MCP Live, spec 0.5) lets a server do more than offer tools:
 Wuji injects the felt sense before each inference (`beforeUser`, never reading the user's message), and raises push events when
 the body asks for attention (balance at the edge, the urge to breathe, a form's steps, a posture that cannot be held).

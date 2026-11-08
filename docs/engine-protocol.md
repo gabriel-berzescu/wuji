@@ -46,7 +46,7 @@ read by the practitioner, plainly, in the present tense) beside its numbers.
 
 ### `sense`
 
-`{"detail": "brief" | "full"}` (default `"brief"`) → the felt sense, now:
+`{"detail": "brief" | "full" | "ambient"}` (default `"brief"`) → the felt sense, now:
 
 ```json
 {
@@ -68,6 +68,12 @@ read by the practitioner, plainly, in the present tense) beside its numbers.
 
 `brief` text is six to ten short lines: weight, alignment, where effort or tension sits, breath, heart. `full` adds the joint
 angles and every region in `text` too.
+
+`ambient` is the felt sense as a body keeps it, for injecting before every inference: only what has changed since the
+practitioner last noticed the body (any `sense` counts as noticing), as a body habituates. A shift of weight, a region
+starting or stopping work, tension taken up or let go ("The shoulders let go."), a stretch appearing or easing, the breath
+changing its pattern or settling, a strain. The breath's cycle and sway within its range are not change. When nothing has
+changed, one quiet line ("Wuji stance as before; nothing new."), never silence. `changed` lists the parts that changed.
 
 ### `intend`
 
