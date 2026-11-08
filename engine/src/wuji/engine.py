@@ -77,9 +77,10 @@ class Engine:
             self.since_muscles = 0.0
             self.watch()
         if self.breath is not None:
-            # effort for the breath is metabolic load (1 = five times resting): three times the strength-weighted mean
-            # activation puts quiet standing near 1.25 METs and holding the ball near 1.5, as measured in people
-            effort = min(1.0, 3.0 * self.senses_effort())
+            # effort for the breath is metabolic load (1 = five times resting): 2.7 times the strength-weighted mean
+            # activation puts quiet standing near 1.3 METs and holding the ball near 1.5, as measured in people (fitted
+            # to both with the calibrated strengths, anatomy.STRENGTH: means 0.027 and 0.043)
+            effort = min(1.0, 2.7 * self.senses_effort())
             settled = not b.moving and not any(b.tension.values())
             compression, ribs = b.breath_shaping()
             belly = max(b.tension["belly"], compression)

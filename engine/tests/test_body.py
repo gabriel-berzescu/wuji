@@ -42,7 +42,7 @@ def test_quiet_standing_is_cheap_and_carried_by_the_calves(body):
     f0, reg = body.a.f0, body.a.muscle_region
     calves = region_effort(sol.act, f0, reg == "calves")
     back = region_effort(sol.act, f0, reg == "lower_back")
-    assert 0.01 < calves < 0.15  # soleus works a few percent in quiet standing
+    assert 0.01 < calves < 0.15  # the soleus works gently in quiet standing: ~15 N m per ankle, a tenth of its strength
     assert back < 0.08  # the back is nearly quiet
 
 
