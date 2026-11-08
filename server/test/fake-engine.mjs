@@ -29,8 +29,8 @@ const log = (s) => process.stderr.write(`fake-engine[${life}]: ${s}\n`);
 
 const state = { stance: 'wuji', weight: 0.5, sink: 0.2, arms: 'hang', head: 'suspended', breath: 'natural' };
 const ENUMS = {
-  stance: ['wuji', 'horse', 'bow_left', 'bow_right'],
-  arms: ['hang', 'embrace', 'lift_sky', 'press_down', 'draw_bow_left', 'draw_bow_right'],
+  stance: ['wuji', 'horse'],
+  arms: ['hang', 'embrace', 'lift_sky', 'press_down', 'bow_extend', 'bow_pull', 'punch', 'fist_waist', 'earth_press', 'owl', 'hands_thighs'],
   head: ['suspended', 'tucked', 'turned_left', 'turned_right'],
 };
 

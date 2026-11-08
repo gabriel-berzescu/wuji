@@ -86,7 +86,8 @@ class MuscleSolver:
 
     def solve(self, qpos: np.ndarray, qvel: np.ndarray, qacc: np.ndarray, floor: np.ndarray | None = None,
               loaded: dict | None = None) -> Solution:
-        """floor: per-muscle lower bound on activation (tension held). loaded: foot -> bool, whether the foot is on the ground."""
+        """floor: per-muscle lower bound on activation (tension held). loaded: foot -> True (on the ground), "forefoot"
+        (on tiptoe) or False (lifted)."""
         m, d, a = self.m, self.d, self.a
         nu, nv = m.nu, m.nv
         d.qpos[:], d.qvel[:], d.qacc[:] = qpos, qvel, qacc
@@ -110,7 +111,10 @@ class MuscleSolver:
         b_mus = moment.T @ bias
 
         # ground: the loaded sole points
-        pts = [p for p in a.sole if (loaded or {}).get(p.foot, True)]
+        def bears(p):  # loaded: foot -> True (the whole sole), "forefoot" (on tiptoe: not the heel) or False (lifted)
+            on = (loaded or {}).get(p.foot, True)
+            return on is True or (on == "forefoot" and p.where != "heel")
+        pts = [p for p in a.sole if bears(p)]
         jacs, worlds = [], []
         jp = np.zeros((3, nv))
         for p in pts:

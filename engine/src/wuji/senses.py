@@ -108,8 +108,19 @@ class Senses:
         parts: list[tuple[str, object, str]] = []
         knee = 0.5 * (joints["knee_angle_l"] + joints["knee_angle_r"])
         bend = "straight" if knee < 4 else "softly bent" if knee < 20 else "bent" if knee < 45 else "deeply bent"
-        parts.append(("stance", (b.posture.stance, bend, b.moving),
-                      f"{b.posture.stance.capitalize()} stance, knees {bend} ({knee:.0f}°){', moving' if b.moving else ''}."))
+        pose = getattr(b, "current", None) or b.pose
+        shape = []
+        if pose["bend"] > 12:
+            shape.append(f"folded forward {pose['bend']:.0f}°")
+        if abs(pose["twist"]) > 6:
+            shape.append(f"turned {abs(pose['twist']):.0f}° to the {'left' if pose['twist'] > 0 else 'right'}")
+        if abs(pose["side"]) > 4:
+            shape.append(f"leaning to the {'left' if pose['side'] > 0 else 'right'}")
+        if pose["rise"] > 3:
+            shape.append("up on the toes")
+        extra = (", " + ", ".join(shape)) if shape else ""
+        parts.append(("stance", (b.posture.stance, bend, b.moving, tuple(s.split(" ")[0] + s.split(" ")[-1] for s in shape)),
+                      f"{b.posture.stance.capitalize()} stance, knees {bend} ({knee:.0f}°){extra}{', moving' if b.moving else ''}."))
         lt, rt = feet_text["left"], feet_text["right"]
         edges = lambda ft: f", on the {ft[1]} edge" if ft[1] else ""
         if lt and rt:

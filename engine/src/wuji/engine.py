@@ -18,35 +18,12 @@ import numpy as np
 from . import __version__
 from .anatomy import REGION_ORDER
 from .body import Body
+from .forms import FORMS
 from .senses import Senses
 
 FRAME = 1 / 25
 MUSCLE_EVERY = 0.25
 
-FORMS = {
-    # name: [(seconds after start, operation, args)], each a step of the form
-    "wuji": [
-        (0, "intend", {"stance": "wuji", "weight": 0.5, "sink": 0.25, "arms": "hang", "over": 4}),
-        (0, "breathe", {"pattern": "natural"}),
-        (4, "tension", {"region": "all", "level": 0}),
-    ],
-    "embrace_tree": [  # zhan zhuang: standing like a tree, holding a ball
-        (0, "intend", {"stance": "wuji", "sink": 0.4, "over": 4}),
-        (4, "intend", {"arms": "embrace", "over": 5}),
-        (9, "breathe", {"pattern": "abdominal", "inhale": 4, "exhale": 6}),
-    ],
-    "lift_sky": [  # Ba Duan Jin, first brocade: two hands hold up the heavens, three times
-        (0, "intend", {"stance": "wuji", "sink": 0.3, "arms": "hang", "over": 3}),
-        (0, "breathe", {"pattern": "natural", "inhale": 4, "exhale": 4}),
-        (3, "intend", {"arms": "lift_sky", "sink": 0.05, "over": 4}),
-        (7, "intend", {"arms": "press_down", "sink": 0.3, "over": 4}),
-        (11, "intend", {"arms": "lift_sky", "sink": 0.05, "over": 4}),
-        (15, "intend", {"arms": "press_down", "sink": 0.3, "over": 4}),
-        (19, "intend", {"arms": "lift_sky", "sink": 0.05, "over": 4}),
-        (23, "intend", {"arms": "hang", "sink": 0.25, "over": 4}),
-        (27, "breathe", {"pattern": "natural"}),
-    ],
-}
 
 
 def _load_breath():
@@ -162,7 +139,10 @@ class Engine:
         b = self.body
         if op == "intend":
             return b.intend(stance=args.get("stance"), weight=args.get("weight"), sink=args.get("sink"),
-                            arms=args.get("arms"), tailbone=args.get("tailbone"), over=args.get("over", 3.0)) + _head_note(args.get("head"))
+                            arms=args.get("arms"), tailbone=args.get("tailbone"), arm_left=args.get("arm_left"),
+                            arm_right=args.get("arm_right"), bend=args.get("bend"), twist=args.get("twist"),
+                            side_bend=args.get("side_bend"), rise=args.get("rise"),
+                            over=args.get("over", 3.0)) + _head_note(args.get("head"))
         if op == "tension":
             return b.set_tension(args.get("region", "all"), float(args.get("level", 0.0)))
         if op == "breathe":

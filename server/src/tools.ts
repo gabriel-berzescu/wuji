@@ -9,6 +9,8 @@ export interface ToolDefinition {
 
 const seconds = (description: string) => ({ type: 'number', minimum: 0, description });
 const unit = (description: string) => ({ type: 'number', minimum: 0, maximum: 1, description });
+const signed = (description: string) => ({ type: 'number', minimum: -1, maximum: 1, description });
+const ARM_SHAPES = ['hang', 'embrace', 'lift_sky', 'press_down', 'bow_extend', 'bow_pull', 'punch', 'fist_waist', 'earth_press', 'owl', 'hands_thighs'];
 
 export const REGIONS = ['feet', 'calves', 'thighs', 'hips', 'lower_back', 'belly', 'shoulders', 'arms', 'hands'] as const;
 
@@ -35,12 +37,18 @@ export const TOOLS: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        stance: { type: 'string', enum: ['wuji', 'horse', 'bow_left', 'bow_right'], description: 'The stance of the legs.' },
+        stance: { type: 'string', enum: ['wuji', 'horse'], description: 'The stance of the legs: wuji (feet hip-width) or horse (wide, low); changing it is a real step.' },
         weight: unit('Share of the weight on the LEFT foot, 0..1; 0.5 is centred.'),
         sink: unit('How deep the knees bend: 0 straight .. 1 the deepest this stance allows.'),
-        arms: { type: 'string', enum: ['hang', 'embrace', 'lift_sky', 'press_down', 'draw_bow_left', 'draw_bow_right'], description: 'What the arms do.' },
+        arms: { type: 'string', enum: ARM_SHAPES, description: 'What both arms do (clears a one-arm shape unless arm_left/arm_right is given too).' },
+        arm_left: { type: 'string', enum: ARM_SHAPES, description: 'The left arm alone, e.g. bow_extend while the right does bow_pull.' },
+        arm_right: { type: 'string', enum: ARM_SHAPES, description: 'The right arm alone.' },
         head: { type: 'string', enum: ['suspended', 'tucked', 'turned_left', 'turned_right'], description: 'The carriage of the head.' },
         tailbone: unit('How far the tailbone drops (song yao: the waist lengthens and hangs): 0 only as much as sinking brings .. 1 dropped as far as it goes.'),
+        bend: unit('The trunk folding forward at the waist and hips: 0 upright .. 1 about 100 degrees.'),
+        twist: signed('The trunk turning: positive to the left, -1 .. 1 (about 40 degrees). The head turns with the chest: this body has no neck joints.'),
+        side_bend: signed('The trunk leaning sideways: positive to the left, -1 .. 1 (about 20 degrees).'),
+        rise: unit('Up on the toes: 0 heels down .. 1 heels raised about 22 degrees, the weight over the balls of the feet.'),
         over: seconds('Seconds to arrive (minimum-jerk movement).'),
       },
       additionalProperties: false,
@@ -87,7 +95,7 @@ export const TOOLS: ToolDefinition[] = [
       + 'when the host grants push events; sense shows where the body is at any moment.',
     inputSchema: {
       type: 'object',
-      properties: { name: { type: 'string', enum: ['wuji', 'embrace_tree', 'lift_sky'], description: 'Which form.' } },
+      properties: { name: { type: 'string', enum: ['wuji', 'embrace_tree', 'lift_sky', 'draw_bow', 'separate', 'owl', 'sway_tail', 'hold_feet', 'fists', 'bounce', 'ba_duan_jin'], description: 'Which form: wuji (settle), embrace_tree (zhan zhuang), the eight brocades one by one (lift_sky, draw_bow, separate, owl, sway_tail, hold_feet, fists, bounce), or ba_duan_jin (all eight, about five minutes).' } },
       required: ['name'],
       additionalProperties: false,
     },

@@ -15,7 +15,7 @@ import numpy as np
 
 from .anatomy import Anatomy, REGION_ORDER, calibrate_rest, load_model
 from .muscles import MuscleSolver, Solution
-from .posture import ARMS, STANCES, Posture, PostureSolver, pelvic_tilt
+from .posture import ARMS, RISE_MAX, STANCES, TRUNK_MAX, Posture, PostureSolver, pelvic_tilt
 
 TENSION_FLOOR = 0.15  # activation a fully held region keeps (co-contraction), on top of what the posture needs
 FOOT_LIFT = 0.06  # how high a stepping foot rises (m)
@@ -55,7 +55,7 @@ class Body:
         self.breath_shift = 0.0  # set by the breath, metres along FORWARD
 
         self.q = self.posture_solver.solve(self.posture, feet=self.pose["feet"], knee_deg=self.pose["knee"],
-                                           arms=self.pose["arms"], iterations=80)
+                                           arms=self.pose["arms_l"], arms_right=self.pose["arms_r"], iterations=80)
         self.q_prev = self.q.copy()
         self.qvel = np.zeros(self.m.nv)
         self.qvel_prev = np.zeros(self.m.nv)
@@ -70,15 +70,23 @@ class Body:
 
     def _pose_of(self, p: Posture, feet: dict | None = None) -> dict:
         knee = p.sink * STANCES[p.stance]["max_knee"]
-        return {"weight": p.weight, "knee": knee, "tilt": pelvic_tilt(knee, p.tailbone), "arms": dict(ARMS[p.arms]),
+        return {"weight": p.weight, "knee": knee, "tilt": pelvic_tilt(knee, p.tailbone),
+                "arms_l": dict(ARMS[p.arm_left or p.arms]), "arms_r": dict(ARMS[p.arm_right or p.arms]),
+                "bend": p.bend * TRUNK_MAX["bend"], "twist": p.twist * TRUNK_MAX["twist"],
+                "side": p.side_bend * TRUNK_MAX["side"], "rise": p.rise * RISE_MAX,
                 "feet": dict(feet or self.posture_solver.feet_for(p.stance)), "lift": {"left": 0.0, "right": 0.0}}
 
-    def intend(self, stance=None, weight=None, sink=None, arms=None, tailbone=None, over: float = 3.0) -> str:
+    def intend(self, stance=None, weight=None, sink=None, arms=None, tailbone=None, arm_left=None, arm_right=None,
+               bend=None, twist=None, side_bend=None, rise=None, over: float = 3.0) -> str:
         """Plans the movement to a new posture; returns what will happen, in a sentence."""
         if stance is not None and stance not in STANCES:
             raise ValueError(f"unknown stance {stance!r} (known: {', '.join(STANCES)})")
-        if arms is not None and arms not in ARMS:
-            raise ValueError(f"unknown arm shape {arms!r} (known: {', '.join(ARMS)})")
+        for name, shape in (("arms", arms), ("arm_left", arm_left), ("arm_right", arm_right)):
+            if shape is not None and shape not in ARMS:
+                raise ValueError(f"unknown arm shape {shape!r} for {name} (known: {', '.join(ARMS)})")
+        for name, v, lo in (("bend", bend, 0.0), ("rise", rise, 0.0), ("twist", twist, -1.0), ("side_bend", side_bend, -1.0)):
+            if v is not None and not lo <= v <= 1.0:
+                raise ValueError(f"{name} runs {lo:g} .. 1")
         if weight is not None and not 0.0 <= weight <= 1.0:
             raise ValueError("weight is the share on the left foot, 0..1")
         if sink is not None and not 0.0 <= sink <= 1.0:
@@ -86,7 +94,9 @@ class Body:
         if tailbone is not None and not 0.0 <= tailbone <= 1.0:
             raise ValueError("tailbone is 0 (as the knees bring it) .. 1 (dropped as far as it goes)")
         over = max(0.5, float(over))
-        target = self.posture.merged(stance=stance, weight=weight, sink=sink, arms=arms, tailbone=tailbone)
+        target = self.posture.merged(stance=stance, weight=weight, sink=sink, arms=arms, tailbone=tailbone,
+                                     arm_left=arm_left, arm_right=arm_right, bend=bend, twist=twist, side_bend=side_bend,
+                                     rise=rise)
         start = self._current_pose()
         self.segments.clear()
         t = self.t
@@ -119,6 +129,19 @@ class Body:
             parts.append(f"arms to {arms.replace('_', ' ')}")
         if tailbone is not None:
             parts.append("the tailbone dropping, the waist lengthening" if tailbone > 0 else "the pelvis returning to neutral")
+        for side, shape in (("left", arm_left), ("right", arm_right)):
+            if shape is not None:
+                parts.append(f"the {side} arm to {shape.replace('_', ' ')}")
+        if bend is not None:
+            parts.append(f"folding forward {bend * TRUNK_MAX['bend']:.0f}°" if bend > 0 else "the trunk rising upright")
+        if twist is not None:
+            parts.append(f"turning {abs(twist) * TRUNK_MAX['twist']:.0f}° to the {'left' if twist > 0 else 'right'}" if twist
+                         else "turning back to the front")
+        if side_bend is not None:
+            parts.append(f"leaning {abs(side_bend) * TRUNK_MAX['side']:.0f}° to the {'left' if side_bend > 0 else 'right'}"
+                         if side_bend else "the trunk upright again")
+        if rise is not None:
+            parts.append("rising onto the toes" if rise > 0 else "the heels coming down")
         return f"{what.capitalize()}{': ' + ', '.join(parts) if parts else ''}, over {over:g} seconds."
 
     def set_tension(self, region: str, level: float) -> str:
@@ -184,8 +207,11 @@ class Body:
         sway = np.array([0.5 * self.sway[0], self.sway[1] + self.breath_shift])  # less side to side than front to back
         self.q_prev = self.q
         self.q = self.posture_solver.solve(now, feet=pose["feet"], lift=pose["lift"], knee_deg=pose["knee"],
-                                           arms=pose["arms"], iterations=6, sway=sway, tilt_deg=pose["tilt"])
-        self.loaded = {s: pose["lift"][s] < 0.005 for s in ("left", "right")}
+                                           arms=pose["arms_l"], arms_right=pose["arms_r"], iterations=6, sway=sway,
+                                           tilt_deg=pose["tilt"], rise_deg=pose["rise"],
+                                           trunk={"bend": pose["bend"], "twist": pose["twist"], "side": pose["side"]})
+        tiptoe = pose["rise"] > 3.0
+        self.loaded = {s: (False if pose["lift"][s] >= 0.005 else "forefoot" if tiptoe else True) for s in ("left", "right")}
         qvel = np.zeros(self.m.nv)
         mujoco.mj_differentiatePos(self.m, qvel, dt, self.q_prev, self.q)
         self.qvel_prev, self.qvel = self.qvel, 0.7 * self.qvel + 0.3 * qvel  # light smoothing of numerical velocity
@@ -218,7 +244,12 @@ def _blend(a: dict, b: dict, s: float) -> dict:
         "weight": lerp(a["weight"], b["weight"]),
         "knee": lerp(a["knee"], b["knee"]),
         "tilt": lerp(a["tilt"], b["tilt"]),
-        "arms": {k: lerp(a["arms"][k], b["arms"][k]) for k in a["arms"]},
+        "arms_l": {k: lerp(a["arms_l"][k], b["arms_l"][k]) for k in a["arms_l"]},
+        "arms_r": {k: lerp(a["arms_r"][k], b["arms_r"][k]) for k in a["arms_r"]},
+        "bend": lerp(a["bend"], b["bend"]),
+        "twist": lerp(a["twist"], b["twist"]),
+        "side": lerp(a["side"], b["side"]),
+        "rise": lerp(a["rise"], b["rise"]),
         "feet": {k: lerp(a["feet"][k], b["feet"][k]) for k in a["feet"]},
         "lift": {k: lerp(a["lift"][k], b["lift"][k]) for k in a["lift"]},
     }

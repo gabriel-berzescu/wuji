@@ -80,7 +80,7 @@ describe('tools', () => {
     const { tools } = await h.request('tools/list', {});
     assert.deepEqual(tools.map((t) => t.name), ['sense', 'intend', 'tension', 'breathe', 'form', 'reset', 'viewer']);
     const intend = tools.find((t) => t.name === 'intend');
-    assert.deepEqual(intend.inputSchema.properties.stance.enum, ['wuji', 'horse', 'bow_left', 'bow_right']);
+    assert.deepEqual(intend.inputSchema.properties.stance.enum, ['wuji', 'horse']);
     assert.equal(intend.inputSchema.properties.weight.maximum, 1);
     const tension = tools.find((t) => t.name === 'tension');
     assert.ok(tension.inputSchema.properties.region.enum.includes('all'));

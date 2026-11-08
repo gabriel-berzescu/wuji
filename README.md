@@ -75,10 +75,10 @@ Claude ── MCPL host (e.g. mcpl-cc-bridge) ── server/ (Node, MCPL) ──
 | Tool | What it does |
 |---|---|
 | `sense` | The felt sense now (`brief`, or `full` with joint angles and every region). |
-| `intend` | Move: `stance` (wuji, horse), `weight` (share on the left foot), `sink` (0..1), `arms` (hang, embrace, lift_sky, press_down), `over` (seconds). |
+| `intend` | Move: `stance` (wuji, horse), `weight` (share on the left foot), `sink` (0..1), `tailbone` (0..1), `arms` or one arm (`arm_left`, `arm_right`: hang, embrace, lift_sky, press_down, bow_extend, bow_pull, punch, fist_waist, earth_press, owl, hands_thighs), the trunk (`bend`, `twist`, `side_bend`), `rise` onto the toes, `over` (seconds). |
 | `tension` | Hold or release tension in a region (feet, calves, thighs, hips, lower_back, belly, shoulders, arms, hands, or all). |
 | `breathe` | `natural`, `abdominal`, `reverse` or `hold`; optionally paced (`inhale`, `exhale`, `pause` seconds); through the nose or the mouth. |
-| `form` | Play a form: `wuji`; `embrace_tree` (zhan zhuang, standing like a tree holding a ball); `lift_sky` (the first of the Eight Brocades, three times). |
+| `form` | Play a form: `wuji`; `embrace_tree` (zhan zhuang, standing like a tree holding a ball); the Eight Brocades one by one (`lift_sky`, `draw_bow`, `separate`, `owl`, `sway_tail`, `hold_feet`, `fists`, `bounce`); or `ba_duan_jin`, all eight in order, about five minutes. |
 | `reset` | Back to wuji: feet hip-width, knees soft, arms hanging, everything released. |
 | `viewer` | Opens a page where someone can watch the practice (see Watching); returns its URL. |
 
@@ -131,7 +131,10 @@ details: environment variables, the grant, how push events wake a session.
   cannot shrug; the shoulder blades follow the arms by a fixed rhythm. The breath is modelled beside the body, not in its ribs.
 - **Muscles are solved four times a second** (a quadratic programme over 416 muscles takes 20–90 ms): plenty for qigong's
   slowness, not for quick movement.
-- **Forms are few**, and Ba Duan Jin beyond its first brocade is still to come.
+- **The Eight Brocades are approximations where the body is.** The owl's gaze turns with the chest (no neck joints); the
+  forward fold of "hands hold the feet" reaches about the shins, as the model's lumbar spine flexes only about 20° and the
+  rest comes from the hips; hands resting on the thighs do not lean on them (there is no hand-thigh contact), so the back
+  carries more in "sway the head and shake the tail" than it would.
 
 ## Develop
 
