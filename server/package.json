@@ -1,0 +1,25 @@
+{
+  "name": "wuji-server",
+  "version": "0.0.1",
+  "description": "Wuji's MCPL face: tools, felt-sense context and body signals for a simulated qigong body.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "wuji-server": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test --test-concurrency=1 test/engine.test.mjs test/server.test.mjs",
+    "vendor:mcpl-core": "node scripts/vendor-mcpl-core.mjs",
+    "live": "npm run build && node test/live.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

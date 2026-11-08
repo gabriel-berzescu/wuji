@@ -1,0 +1,18 @@
+{
+  "package": "@animalabs/mcpl-core",
+  "version": "0.4.0",
+  "repository": "https://github.com/anima-research/mcpl-core-ts",
+  "commit": "4b888b0d9117d6195e10ba9e27e258c02e8c0e34",
+  "committed": "2026-11-02T12:58:11-05:00",
+  "dirty": false,
+  "files": [
+    "capabilities.ts",
+    "connection.ts",
+    "errors.ts",
+    "index.ts",
+    "manifest.ts",
+    "methods.ts",
+    "tags.ts",
+    "types.ts"
+  ]
+}
