@@ -364,3 +364,29 @@ def test_felt_lines_are_plain_and_sized():
     b.set_pattern("hold")
     run(b, 12)
     assert any("hold" in l.lower() for l in b.felt())
+
+
+def test_settling_slows_and_deepens_the_breath_without_moving_co2():
+    """Still and holding nothing, the natural breath slows toward 6-8 a minute and deepens over minutes, the same air
+    reaching the alveoli (CO2 holds), oxygen use falls a little and the heart settles; moving again undoes it."""
+    b = Breath(seed=4)
+    awake_rates, awake_tides = [], []
+    for i in range(int(240 / 0.05)):
+        b.step(0.05, effort=0.06)
+        if i * 0.05 > 120:
+            awake_rates.append(b.state()["rate_bpm"]); awake_tides.append(b.state()["tidal_l"])
+    awake = {"rate_bpm": st.mean(awake_rates), "tidal_l": st.mean(awake_tides)}
+    rates, tides, co2, hr = [], [], [], []
+    for i in range(int(480 / 0.05)):
+        b.step(0.05, effort=0.06, settled=True)
+        if i * 0.05 > 360:
+            s = b.state()
+            rates.append(s["rate_bpm"]); tides.append(s["tidal_l"]); co2.append(s["co2_mmhg"]); hr.append(s["heart_bpm"])
+    assert b.state()["settled"] > 0.9
+    assert st.mean(rates) < 9.5 < awake["rate_bpm"]
+    assert st.mean(tides) > 1.4 * awake["tidal_l"]
+    assert 37.0 < st.mean(co2) < 42.0
+    assert any("slowed and deepened" in line for line in b.felt())
+    for _ in range(int(60 / 0.05)):
+        b.step(0.05, effort=0.06, settled=False)
+    assert b.state()["settled"] < 0.05

@@ -99,8 +99,11 @@ class Engine:
             self.since_muscles = 0.0
             self.watch()
         if self.breath is not None:
-            regions = self.senses_effort()
-            for ev in self.breath.step(dt, effort=min(1.0, 8 * regions), belly_tension=b.tension["belly"]) or []:
+            # effort for the breath is metabolic load (1 = five times resting): three times the strength-weighted mean
+            # activation puts quiet standing near 1.25 METs and holding the ball near 1.5, as measured in people
+            effort = min(1.0, 3.0 * self.senses_effort())
+            settled = not b.moving and not any(b.tension.values())
+            for ev in self.breath.step(dt, effort=effort, belly_tension=b.tension["belly"], settled=settled) or []:
                 self.event(ev.get("event", "breath"), ev.get("data", {}), every=5.0)
             st = self.breath.state()
             # the breath moves the body: the trunk sways a little forward and back with each breath (mm)

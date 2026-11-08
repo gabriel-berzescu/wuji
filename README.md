@@ -46,7 +46,10 @@ builds passive tension, which the body reports by region.
 between rib cage and belly, the diaphragm descending and pushing the belly out (or drawn in, in reverse breathing), abdominal
 pressure, CO₂ and O₂ stores and the urge to breathe they drive (a breath-hold breaks on its own at the body's limit), the
 nasal cycle (one nostril more open than the other, swapping over hours), cool air in and warm air out, and the heart's answer
-(respiratory sinus arrhythmia, largest near six breaths a minute). Sources are cited in `engine/src/wuji/breath.py`.
+(respiratory sinus arrhythmia, largest near six breaths a minute). Stand still and hold nothing, and the body settles over
+minutes, as in the relaxation response: the breath slows from about 14 to about 8 a minute and deepens by half, the air
+reaching the lungs' depths unchanged so CO₂ holds, oxygen use falls a little and the heart settles a few beats. Sources
+are cited in `engine/src/wuji/breath.py`.
 
 **The felt sense.** What a body's own sensors would carry, in numbers and in plain words: where the weight rests in each foot
 (heel, middle, forefoot near the bubbling well, toes, inner or outer edge), which regions work and how hard, what is held beyond

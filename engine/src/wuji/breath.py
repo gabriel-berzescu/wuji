@@ -60,6 +60,13 @@ Heart
     slowing (Foster and Sheel 2005), and a little slow noise keeps it alive.
     Hypocapnia below about 32 mmHg is felt as light-headedness and tingling (Laffey and Kavanagh 2002).
 
+Settling
+    When the practitioner stays still and holds nothing, the body settles over minutes (the relaxation response; Benson
+    et al. 1974): the natural breath slows and deepens toward 6-8 breaths/min with alveolar ventilation unchanged, so CO2
+    holds; oxygen use falls by about 12 % (Wallace 1970; Wallace, Benson and Wilson 1971 measured 10-20 %); the heart
+    settles a few beats. It builds with a time constant of two minutes and fades within about fifteen seconds of moving or
+    holding tension again.
+
 References
     Agostoni E. J Appl Physiol 1963;18:30-36. Boussuges A, Gole Y, Blanc P. Chest 2009;135:391-400. Cobb WS et al.
     J Surg Res 2005;129:231-235. Eccles R. Acta Otolaryngol 2000;120:580-595. Eger EI, Severinghaus JW. Anesthesiology
@@ -73,7 +80,8 @@ References
     O'Rourke D. Breathe 2017;13:298-309. Severinghaus JW. J Appl Physiol 1979;46:599-602. Sharp JT et al. J Appl Physiol
     1975;39:608-618. Song HS, Lehrer PM. Appl Psychophysiol Biofeedback 2003;28:13-23. Tobin MJ et al. Chest 1983;84:202-205;
     J Appl Physiol 1988;65:309-317. Vaschillo E et al. Appl Psychophysiol Biofeedback 2002;27:1-27. Vlemincx E et al.
-    Biol Psychol 2010;84:82-87.
+    Biol Psychol 2010;84:82-87. Benson H, Beary JF, Carol MP. Psychiatry 1974;37:37-46. Wallace RK. Science
+    1970;167:1751-1754. Wallace RK, Benson H, Wilson AF. Am J Physiol 1971;221:795-799.
 
 Conventions: flows are positive inward (inhaling); belly_cm and chest_cm are displacements from the relaxed end of an
 exhale, positive outward; o2_sat is in percent.
@@ -180,6 +188,7 @@ class Breath:
         self._tension = 0.0
         self._effort = 0.0
         self._met = 1.0
+        self._calm = 0.0  # how settled the body is (see Settling), 0..1
         self._ve = VT0 * F0
         self._mech: dict = {}
         # gas
@@ -279,10 +288,11 @@ class Breath:
 
     # ---------------------------------------------------------------- time
 
-    def step(self, dt: float, effort: float = 0.0, belly_tension: float = 0.0) -> list[dict]:
+    def step(self, dt: float, effort: float = 0.0, belly_tension: float = 0.0, settled: bool = False) -> list[dict]:
         """Advance dt seconds. effort: whole-body muscular effort 0..1 (raises metabolic CO2 and breathing drive).
         belly_tension: abdominal tension the practitioner holds, 0..1 (stiffens the abdomen, shifting the breath to the
-        rib cage). Returns protocol events, rare: an urge rising during a hold, or the breath settling after it."""
+        rib cage). settled: the practitioner is still and holds nothing (the body settles over minutes; see Settling).
+        Returns protocol events, rare: an urge rising during a hold, or the breath settling after it."""
         events: list[dict] = []
         if not dt or dt <= 0:
             return events
@@ -290,6 +300,9 @@ class Breath:
         tension = _clip(float(belly_tension), 0.0, 1.0)
         n = max(1, math.ceil(dt / H_MAX - 1e-9))
         h = dt / n
+        target = 1.0 if settled else 0.0
+        tau = 120.0 if target > self._calm else 15.0
+        self._calm += (target - self._calm) * min(1.0, dt / tau)
         for _ in range(n):
             self._advance(h, effort, tension, events)
         return events
@@ -298,7 +311,7 @@ class Breath:
         self.t += h
         hm = h / 60.0
         self._effort += (effort - self._effort) * min(1.0, h / 4.0)
-        self._met += (1.0 + 4.0 * effort - self._met) * min(1.0, h / 30.0)
+        self._met += ((1.0 + 4.0 * effort) * (1.0 - 0.12 * self._calm) - self._met) * min(1.0, h / 30.0)
         self._tension += (tension - self._tension) * min(1.0, h / 0.5)
         self._s_ab += (SHARE_AB[self._pattern] - self._s_ab) * min(1.0, h / 1.5)
 
@@ -379,7 +392,8 @@ class Breath:
         self._z += h * self._zd
         rsa = (1.0 - 0.7 * self._effort) * (A_GATE * self._gate + B_RES * (2 * ZETA / W0) * self._zd)
         self._hr_noise += -self._hr_noise * h / 8.0 + 0.8 * math.sqrt(2 * h / 8.0) * float(self._rng_heart.standard_normal())
-        base = self._hr0 + 70.0 * self._effort + 0.4 * max(0.0, self._Pa - 42.0) + 40.0 * max(0.0, 0.94 - self._Sp)
+        base = (self._hr0 - 5.0 * self._calm + 70.0 * self._effort + 0.4 * max(0.0, self._Pa - 42.0)
+                + 40.0 * max(0.0, 0.94 - self._Sp))
         if self._phase == "hold":
             base *= 1.0 - 0.08 * min(1.0, self._hold_t / 25.0)
         hr = base + rsa + self._hr_noise
@@ -459,6 +473,10 @@ class Breath:
             r = self._ve_ratio(paced=False)
             rate = F0 * r ** 0.35 * math.exp(0.12 * self._nf)
             vt = VT0 * r ** 0.65 * math.exp(0.12 * self._nv)
+            if self._calm > 0.0:  # settling: slower and deeper, the same air reaching the alveoli
+                va = (vt - DEAD_L) * rate
+                rate *= 1.0 - 0.45 * self._calm
+                vt = va / rate + DEAD_L
             if self._pattern == "natural" and self._phase != "hold" and float(rng.random()) < SIGH_P:
                 sigh = True
                 vt *= 2.3
@@ -559,6 +577,7 @@ class Breath:
             "urge": round(self._urge, 3),
             "heart_bpm": round(self._hr, 1),
             "hold_s": round(self._hold_t, 1) if self._phase == "hold" else 0.0,
+            "settled": round(self._calm, 3),
         }
 
     def felt(self, detail: str = "brief") -> list[str]:
@@ -594,6 +613,8 @@ class Breath:
             lines.append("A little light-headed; the fingertips tingle.")
         elif ph == "hold":
             lines.append(f"Still and easy, {self._hold_t:.0f} s into the hold.")
+        elif self._calm > 0.6 and not self._paced:
+            lines.append("The breath has slowed and deepened on its own; the heart settles with it.")
         # the heart follows the breath with a lag, so its trend is told as it is, joined to the breath only when they agree
         elif self._dhr > 0.4:
             lines.append("The heart quickens with the in-breath." if ph == "inhale" else "The heart is quickening.")
