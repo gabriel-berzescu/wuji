@@ -15,8 +15,12 @@ equations rather than given force variables: everything is expressed in the inde
 joint reaches the joint that drives it through the coupling's slope (q_dot = T q_dot_independent; the equations are T^T(...)).
 Contact forces are solved in hectonewtons, so all the variables have similar sizes and the solver converges quickly.
 
-minimising the sum of squared activations (the classic physiological criterion, Crowninshield & Brand 1981; also qigong's
-song: no more effort than the posture needs) plus a little change from the last moment (activation is not instantaneous).
+minimising the sum of squared activations (the usual quadratic form of Crowninshield & Brand's 1981 physiological
+criterion; also qigong's song: no more effort than the posture needs) plus a little change from the last moment
+(activation is not instantaneous). Crowninshield & Brand cubed the muscle stress, for endurance: a muscle near its maximum
+costs far more than its share, so the load spreads before any one muscle is driven hard. The squares alone let one strong
+muscle run near its maximum to spare a dozen small ones (the latissimus at 90% when the hands bear the trunk's lean on the
+thighs), so activation past EASE costs again, steeply (a soft ceiling: a slack variable per muscle, still a QP).
 A muscle's force is linear in its activation at a given length and velocity: F = gain(L, V) * a + bias(L) (MuJoCo's Hill
 model), so the problem is a true QP. This follows MyoSuite's inverse-dynamics tutorial, with the contacts added as variables.
 """
@@ -54,6 +58,8 @@ class MuscleSolver:
     W_ROOT = 1e2
     W_RESERVE = 1.0
     F_UNIT = 100.0  # contact forces are solved in hectonewtons
+    EASE = 0.5  # activation past this costs W_HARD more per unit squared (the endurance criterion's character)
+    W_HARD = 10.0
 
     def __init__(self, anatomy: Anatomy) -> None:
         self.a = anatomy
@@ -68,6 +74,15 @@ class MuscleSolver:
                                    int(m.jnt_qposadr[j2]) if j2 >= 0 else -1, m.eq_data[e, :5].copy()))
         slaves = {c[0] for c in self.couplings}
         self.free = np.array([v for v in range(m.nv) if v not in slaves])  # independent coordinates
+
+    def _qp(self, p_diag, q, A, lo, hi) -> np.ndarray | None:
+        solver = osqp.OSQP()
+        solver.setup(sparse.diags(p_diag).tocsc(), q, A, lo, hi, verbose=False, polishing=True, eps_abs=1e-5,
+                     eps_rel=1e-5, max_iter=20000, warm_starting=True, adaptive_rho_interval=25)
+        res = solver.solve(raise_error=False)
+        self.status = res.info.status
+        ok = res.info.status in ("solved", "solved inaccurate") and res.x is not None and np.all(np.isfinite(res.x))
+        return res.x if ok else None
 
     def _reduction(self, qpos: np.ndarray) -> np.ndarray:
         """T (nv x n_free): full joint velocities from the independent ones, through the couplings' slopes."""
@@ -192,17 +207,24 @@ class MuscleSolver:
 
         w_r = np.full(nr, self.W_RESERVE)
         w_r[:6] = self.W_ROOT  # the root's six coordinates are the first independent ones
-        P = sparse.diags(np.concatenate([np.full(nu, 2 * (self.W_ACT + self.W_SMOOTH)), np.full(nf, 2 * self.W_FORCE),
-                                         2 * w_r])).tocsc()
+        p_diag = np.concatenate([np.full(nu, 2 * (self.W_ACT + self.W_SMOOTH)), np.full(nf, 2 * self.W_FORCE), 2 * w_r])
         q = np.concatenate([-2 * self.W_SMOOTH * self.prev, np.zeros(nf + nr)])
-        A = sparse.vstack(rows).tocsc()
-        solver = osqp.OSQP()
-        solver.setup(P, q, A, np.concatenate(lo), np.concatenate(hi), verbose=False, polishing=True, eps_abs=1e-5,
-                     eps_rel=1e-5, max_iter=20000, warm_starting=True, adaptive_rho_interval=25)
-        res = solver.solve(raise_error=False)
-        self.status = res.info.status
-        ok = res.info.status in ("solved", "solved inaccurate") and res.x is not None and np.all(np.isfinite(res.x))
-        x = res.x if ok else np.zeros(n)
+        A, lo, hi = sparse.vstack(rows).tocsc(), np.concatenate(lo), np.concatenate(hi)
+        x = self._qp(p_diag, q, A, lo, hi)
+        if x is not None and self.W_HARD > 0 and x[:nu].max() > self.EASE + 1e-3:
+            # some muscle past EASE: solve again with the soft ceiling (slack s per muscle: a - s <= EASE, s >= 0, costing
+            # W_HARD s^2). When none is past it the first answer is already the optimum with the ceiling, so ordinary
+            # postures pay nothing for it.
+            eye, zeros = sparse.identity(nu), lambda r, c: sparse.csc_matrix((r, c))
+            A1 = sparse.vstack([sparse.hstack([A, zeros(A.shape[0], nu)]),
+                                sparse.hstack([eye, zeros(nu, n - nu), -eye]),
+                                sparse.hstack([zeros(nu, n), eye])]).tocsc()
+            x1 = self._qp(np.concatenate([p_diag, np.full(nu, 2 * self.W_HARD)]), np.concatenate([q, np.zeros(nu)]), A1,
+                          np.concatenate([lo, np.full(nu, -np.inf), np.zeros(nu)]),
+                          np.concatenate([hi, np.full(nu, self.EASE), np.full(nu, np.inf)]))
+            x = x1[:n] if x1 is not None else x
+        ok = x is not None
+        x = x if ok else np.zeros(n)
         act = np.clip(x[:nu], 0, 1)
         f = x[nu:nu + nf].reshape(-1, 3) * self.F_UNIT
         r = x[nu + nf:]
