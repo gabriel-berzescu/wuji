@@ -69,6 +69,7 @@ function handle(op, args) {
     case 'breathe': state.breath = args.pattern ?? state.breath; return { accepted: true, text: `Breathing ${state.breath}.` };
     case 'form': return { accepted: true, steps: 4, text: `Beginning ${args.name}.` };
     case 'reset': Object.assign(state, { stance: 'wuji', weight: 0.5, breath: 'natural' }); return { accepted: true, text: 'Back to wuji.' };
+    case 'viewer': return { url: 'http://127.0.0.1:7341/', text: 'The viewer is open at http://127.0.0.1:7341/.' };
     default: throw new Error(`unknown op '${op}'`);
   }
 }

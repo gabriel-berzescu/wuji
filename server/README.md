@@ -3,7 +3,7 @@
 Wuji's MCPL face. It runs the engine (the simulated body, `../engine`) as a child process and offers
 it to Claude through an MCPL host such as [mcpl-cc-bridge](https://github.com/anima-research/mcpl-cc-bridge):
 
-- **Tools**: `sense`, `intend`, `tension`, `breathe`, `form`, `reset`, one per engine operation
+- **Tools**: `sense`, `intend`, `tension`, `breathe`, `form`, `reset`, `viewer`, one per engine operation
   (see `../docs/engine-protocol.md`). Results are the engine's prose first, then the rest of its
   answer as compact JSON.
 - **Felt sense** (`wuji.feltSense`): before each turn, a brief sense of the body (six to ten lines)
@@ -66,7 +66,7 @@ unpublished); the tools and the felt sense work without it.
 
 | Path | What it enables | Without it |
 |---|---|---|
-| `tools` | the six tools | the tools still answer: they are plain MCP and need no MCPL grant |
+| `tools` | the seven tools | the tools still answer: they are plain MCP and need no MCPL grant |
 | `contextHooks.beforeInference.inject.beforeUser` | `wuji.feltSense` | no felt sense before turns |
 | `pushEvents` | `wuji.signals` | no body signals |
 

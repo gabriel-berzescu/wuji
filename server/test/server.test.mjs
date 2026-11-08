@@ -75,10 +75,10 @@ describe('initialize and grant', () => {
 });
 
 describe('tools', () => {
-  it('lists the six tools with schemas mirroring the protocol', () => withServer({}, {}, async (h) => {
+  it('lists the seven tools with schemas mirroring the protocol', () => withServer({}, {}, async (h) => {
     await h.initialize();
     const { tools } = await h.request('tools/list', {});
-    assert.deepEqual(tools.map((t) => t.name), ['sense', 'intend', 'tension', 'breathe', 'form', 'reset']);
+    assert.deepEqual(tools.map((t) => t.name), ['sense', 'intend', 'tension', 'breathe', 'form', 'reset', 'viewer']);
     const intend = tools.find((t) => t.name === 'intend');
     assert.deepEqual(intend.inputSchema.properties.stance.enum, ['wuji', 'horse', 'bow_left', 'bow_right']);
     assert.equal(intend.inputSchema.properties.weight.maximum, 1);
@@ -107,9 +107,12 @@ describe('tools', () => {
     assert.match((await h.call('breathe', { pattern: 'abdominal', inhale: 4, exhale: 6 })).content[0].text, /abdominal/);
     assert.match((await h.call('form', { name: 'lift_sky' })).content[0].text, /lift_sky/);
     assert.match((await h.call('reset')).content[0].text, /wuji/);
+    const v = await h.call('viewer');
+    assert.match(v.content[0].text, /^The viewer is open at http:\/\/127\.0\.0\.1:7341\//);
+    assert.deepEqual(JSON.parse(v.content[1].text), { url: 'http://127.0.0.1:7341/' });
 
     const ops = h.ops().map((o) => o.op);
-    assert.deepEqual(ops, ['hello', 'sense', 'intend', 'tension', 'breathe', 'form', 'reset']);
+    assert.deepEqual(ops, ['hello', 'sense', 'intend', 'tension', 'breathe', 'form', 'reset', 'viewer']);
   }));
 
   it('reports engine refusals and unknown tools as tool errors', () => withServer({}, {}, async (h) => {

@@ -80,6 +80,18 @@ Claude ── MCPL host (e.g. mcpl-cc-bridge) ── server/ (Node, MCPL) ──
 | `breathe` | `natural`, `abdominal`, `reverse` or `hold`; optionally paced (`inhale`, `exhale`, `pause` seconds); through the nose or the mouth. |
 | `form` | Play a form: `wuji`; `embrace_tree` (zhan zhuang, standing like a tree holding a ball); `lift_sky` (the first of the Eight Brocades, three times). |
 | `reset` | Back to wuji: feet hip-width, knees soft, arms hanging, everything released. |
+| `viewer` | Opens a page where someone can watch the practice (see Watching); returns its URL. |
+
+## Watching
+
+Someone beside the practice can watch it. The `viewer` tool starts a small web server inside the engine and returns its
+address (`http://127.0.0.1:7341/`, or the next free port; `WUJI_VIEWER_PORT` chooses another): open it in a browser on the same
+machine. The page shows the skeleton moving in real time, the 416 muscles as thin strands along their paths, dim when quiet and
+warming to red as they work, a glow under each foot where the weight presses, the weight split and effort by region, and the
+breath: its phase, the lungs filling, belly and chest, each nostril's flow and warmth, CO₂, the heart. Drag to turn around the
+body, scroll to come closer, double-click to return to the first view.
+
+It shows what the body does, not what the practitioner feels: the felt sense stays between the body and the one practising.
 
 ## Install
 
@@ -124,7 +136,7 @@ details: environment variables, the grant, how push events wake a session.
 ## Develop
 
 ```
-cd engine && uv run pytest           # the body, the breath, the protocol (35 tests)
+cd engine && uv run pytest           # the body, the breath, the protocol, the viewer (41 tests)
 cd server && npm test                # the MCPL server against a fake engine
 cd server && npm run live            # the whole chain against the real body
 ```

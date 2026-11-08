@@ -70,6 +70,7 @@ class Engine:
         self.last_event: dict[str, float] = {}
         self.strain_since: float | None = None
         self.since_muscles = 0.0
+        self.viewer = None  # started by the `viewer` operation (viewer.py)
 
     # ---------- output ----------
 
@@ -109,6 +110,8 @@ class Engine:
             # the breath moves the body: the trunk sways a little forward and back with each breath (mm)
             b.breath_shift = -0.0015 * (st.get("lung_volume_l", 3.0) - 2.75)
         self.run_form()
+        if self.viewer is not None:
+            self.viewer.publish(self)  # a frame for the viewer, only while someone watches
 
     def senses_effort(self) -> float:
         s = self.body.solution
@@ -193,6 +196,13 @@ class Engine:
             if self.breath is not None:
                 self.breath.set_pattern("natural")
             return {"accepted": True, "text": text}
+        if op == "viewer":
+            if self.viewer is None:
+                from .viewer import Viewer  # noqa: PLC0415
+                self.viewer = Viewer(self)
+            url = self.viewer.start()
+            return {"url": url, "text": f"The viewer is open at {url}: the body, its muscles at work and the breath, "
+                                        "seen from outside. The felt sense stays private."}
         if op == "shutdown":
             self.running = False
             return {"ok": True}

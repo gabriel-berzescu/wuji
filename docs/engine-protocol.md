@@ -126,6 +126,16 @@ what the posture needs. Regions: `feet`, `calves`, `thighs`, `hips`, `lower_back
 
 `{}`: back to wuji stance, natural breath, all tension released. → `{"accepted": true, "text": "..."}`
 
+### `viewer`
+
+`{}` → `{"url": "http://127.0.0.1:7341/", "text": "The viewer is open at ..."}`. Starts the viewer (once; later calls return
+the same URL): a web page, served by the engine on 127.0.0.1, where someone can watch the practice from outside: the bones
+moving, the muscles along their paths coloured by activation, the centre of pressure under each foot, weight, effort by region,
+the breath and the heart. It shows what the body does, never the felt sense. The port is `WUJI_VIEWER_PORT`, or 7341, or the
+next free one. The page loads `/model.bin` (the bones' meshes and the muscle table, once) and then follows `/stream`
+(Server-Sent Events, a frame per engine frame while a page is open; nothing is computed while nobody watches). Both formats
+are documented in `engine/src/wuji/viewer.py`. The page loads three.js from a CDN, so the watching browser needs the internet.
+
 ### `shutdown`
 
 `{}` → `{"ok": true}`, then the engine exits.

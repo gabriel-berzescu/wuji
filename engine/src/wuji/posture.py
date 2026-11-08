@@ -27,7 +27,7 @@ STANCES = {
 # the chest, elbows rounded; lift_sky overhead; press_down in front of the hips.
 ARMS = {
     "hang": {"shoulder_elv": 6, "elv_angle": 0, "shoulder_rot": 0, "elbow_flex": 0, "pro_sup": 0, "flexion": 0, "curl": 0.2},
-    "embrace": {"shoulder_elv": 48, "elv_angle": 48, "shoulder_rot": 44, "elbow_flex": 91, "pro_sup": -20, "flexion": 0, "curl": 0.25},
+    "embrace": {"shoulder_elv": 47, "elv_angle": 41, "shoulder_rot": 34, "elbow_flex": 90, "pro_sup": -20, "flexion": 0, "curl": 0.25},
     "lift_sky": {"shoulder_elv": 178, "elv_angle": 10, "shoulder_rot": 0, "elbow_flex": 9, "pro_sup": 80, "flexion": -40, "curl": 0.0},
     "press_down": {"shoulder_elv": 16, "elv_angle": -29, "shoulder_rot": 0, "elbow_flex": 52, "pro_sup": 80, "flexion": -45, "curl": 0.0},
 }

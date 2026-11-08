@@ -13,7 +13,7 @@ from wuji.posture import DEG, Posture, PostureSolver
 
 SHAPES = {
     "hang": dict(hand=(0.03, 0.10, -0.60), elbow=(0.0, 0.04, -0.29), x0=(5, 0, 0, 5)),
-    "embrace": dict(hand=(0.38, -0.10, -0.12), elbow=(0.18, 0.12, -0.20), x0=(60, 70, 20, 80)),
+    "embrace": dict(hand=(0.40, -0.04, -0.12), elbow=(0.16, 0.15, -0.22), x0=(60, 70, 20, 80)),  # a big ball: hands ~26 cm apart
     "lift_sky": dict(hand=(0.05, -0.06, 0.62), elbow=(0.03, 0.02, 0.30), x0=(160, 90, 0, 5)),
     "press_down": dict(hand=(0.18, 0.12, -0.45), elbow=(0.04, 0.10, -0.28), x0=(15, 60, 0, 30)),
 }

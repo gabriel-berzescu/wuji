@@ -98,6 +98,14 @@ export const TOOLS: ToolDefinition[] = [
     description: 'Return to the wuji stance, natural breath, all tension released.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
+  {
+    name: 'viewer',
+    title: 'Open the viewer',
+    description: 'Start (or find) the viewer: a local web page where someone can watch the practice from outside: the '
+      + 'bones moving, the muscles working, the weight in the feet, the breath and the heart. Returns its URL '
+      + '(127.0.0.1) to share. The felt sense stays private; the page shows only what the body does.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
 ];
 
 export const TOOL_NAMES: ReadonlySet<string> = new Set(TOOLS.map((t) => t.name));

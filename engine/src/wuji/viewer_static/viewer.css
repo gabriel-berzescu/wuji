@@ -1,0 +1,111 @@
+:root {
+  --bg: #12151a;
+  --bg-2: #1a1e25;
+  --ink: #ddd6c8;
+  --dim: #8c887f;
+  --faint: rgba(221, 214, 200, 0.12);
+  --panel: rgba(18, 21, 26, 0.55);
+  --warm: #e0955a;
+  --red: #e5543c;
+  --cool: #8fb6c8;
+  --calm: #a9c2a0;
+  --bone: #e8dfca;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #181b21;
+  color: var(--ink);
+  font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+#title { position: fixed; top: 22px; left: 26px; pointer-events: none; }
+#title h1 {
+  margin: 0;
+  font: 400 26px/1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+#title .han { font-size: 18px; color: var(--dim); margin-left: 6px; letter-spacing: 0.1em; }
+#status { margin: 8px 0 0; color: var(--dim); letter-spacing: 0.02em; }
+
+.panel {
+  position: fixed;
+  width: 236px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--faint);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+}
+#body-panel { top: 22px; right: 22px; }
+#breath-panel { left: 22px; bottom: 22px; width: 290px; }
+
+.panel section + section { margin-top: 14px; }
+h2 {
+  margin: 0 0 7px;
+  font: 400 11px/1 ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--dim);
+}
+
+.split { display: flex; align-items: center; gap: 8px; }
+.side { width: 34px; font-size: 13px; }
+.side:last-child { text-align: right; }
+.split-bar { position: relative; flex: 1; height: 6px; border-radius: 3px; overflow: hidden; display: flex; background: var(--faint); }
+#w-bar-left { background: var(--bone); opacity: 0.75; transition: width 0.2s linear; }
+#w-bar-right { background: var(--bone); opacity: 0.4; flex: 1; }
+.split-bar i { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--bg); }
+.legend-row { display: flex; justify-content: space-between; color: var(--dim); font-size: 11px; margin-top: 3px; }
+
+.region { display: grid; grid-template-columns: 72px 1fr 34px; align-items: center; gap: 8px; height: 19px; }
+.region .label { color: var(--dim); }
+.region .bar { position: relative; height: 4px; border-radius: 2px; background: var(--faint); }
+.region .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; width: 0; background: var(--warm); transition: width 0.25s linear; }
+.region .bar b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--cool); display: none; }
+.region .num { text-align: right; color: var(--ink); opacity: 0.85; }
+
+.legend .ramp {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(120, 96, 108, 0.45), #c9824a 45%, #e9572f 75%, #ff3220);
+}
+
+.breath-main { display: flex; align-items: center; gap: 12px; }
+#lung { width: 92px; height: 92px; flex: none; }
+.lung-rest { fill: none; stroke: var(--faint); stroke-width: 1; }
+#lung-fill { fill: rgba(143, 182, 200, 0.22); stroke: var(--cool); stroke-width: 1.4; transition: r 0.08s linear; filter: drop-shadow(0 0 6px rgba(143, 182, 200, 0.35)); }
+#phase { font: 400 20px/1.1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: 0.03em; }
+.dim { color: var(--dim); font-size: 12px; margin-top: 3px; }
+
+.rows .row { display: grid; grid-template-columns: 62px 1fr 64px; align-items: center; gap: 8px; height: 19px; }
+.label { color: var(--dim); }
+.num { text-align: right; }
+.diverge, .flow { position: relative; height: 4px; border-radius: 2px; background: var(--faint); }
+.diverge::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--dim); opacity: 0.5; }
+.diverge i, .flow i { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: var(--cool); }
+.flow i { left: 0; width: 0; }
+.flow i.warm { background: var(--warm); }
+.flow i.calm { background: var(--calm); }
+
+.vitals { display: flex; justify-content: space-between; }
+#beat { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--red); opacity: 0.3; margin-right: 2px; vertical-align: 1px; }
+
+@media (max-width: 720px) {
+  #body-panel { top: auto; bottom: 16px; right: 16px; width: calc(50% - 24px); }
+  #breath-panel { left: 16px; bottom: 16px; width: calc(50% - 24px); }
+  #lung { width: 52px; height: 52px; }
+  .panel { padding: 10px 12px; }
+  .rows .row { grid-template-columns: 50px 1fr 56px; }
+  .region { grid-template-columns: 62px 1fr 30px; }
+  #pattern { display: none; }
+  #title { left: 16px; top: 16px; }
+}
