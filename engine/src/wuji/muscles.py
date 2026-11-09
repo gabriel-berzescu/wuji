@@ -228,6 +228,7 @@ class MuscleSolver:
         act = np.clip(x[:nu], 0, 1)
         f = x[nu:nu + nf].reshape(-1, 3) * self.F_UNIT
         r = x[nu + nf:]
+        self.reserves = r  # what each independent coordinate needed beyond muscles and contacts (for diagnosis)
         if ok:
             self.prev = act
 

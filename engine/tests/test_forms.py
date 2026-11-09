@@ -162,3 +162,27 @@ def test_the_passive_tissues_carry_what_people_hang_on(body):
     assert all(f.moment > 10 and f.share > 0.15 for f in hamstrings)  # N m, holding each hip (folded ~60 degrees)
     body.intend(bend=0.0, over=3)
     settle(body, 3.5)
+
+
+def test_the_whole_sway_at_live_frame_rate_never_strains():
+    """Played as the live body plays it (frames at 30 Hz, the muscles four times a second), Sway the head and shake the
+    tail asks nothing beyond the muscles: the resting arms keep their plane of elevation (it drifted, frame by frame, into
+    a cross-body twist on the second lean to the right, where no muscle could hold it)."""
+    from wuji.forms import sway_tail
+    b = Body(seed=7)
+    steps = sorted(sway_tail(), key=lambda s: s[0])
+    nxt, t0, since, worst = 0, b.t, 0.0, 0.0
+    while b.t - t0 < 38:  # through the second lean to the right, where it strained
+        while nxt < len(steps) and b.t - t0 >= steps[nxt][0]:
+            _, op, args = steps[nxt]
+            if op == "intend":
+                b.intend(**{k: v for k, v in args.items() if k not in ("breath", "breath_over")})
+            nxt += 1
+        b.step(1 / 30)
+        since += 1 / 30
+        if since >= 0.25:
+            sol = b.solve_muscles(since)
+            since = 0.0
+            if b.t - t0 > 8:  # past the step out (a brief one-legged moment, under the strain signal's threshold)
+                worst = max(worst, sol.joint_residual)
+    assert worst < 5  # N m: a strain signal needs 10 for a second

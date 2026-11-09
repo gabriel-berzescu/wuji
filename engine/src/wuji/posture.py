@@ -77,6 +77,8 @@ REST_LOW = -0.30  # m along the femur from the hip (the knee joint is at -0.40)
 REST_HIGH = -0.08
 REST_ELBOW = 20.0  # deg: the elbow's softness when the arm reaches its lowest
 ARM_JOINTS = ("elv_angle", "shoulder_elv", "shoulder_rot", "elbow_flex", "pro_sup", "deviation", "flexion")
+ARM_JOINTS_ARR = np.array(ARM_JOINTS)
+ARM_PLANE_HOLD = 3.0  # how firmly a resting arm keeps its shape's plane of elevation (see place_hands)
 
 
 class PostureSolver:
@@ -340,8 +342,11 @@ class PostureSolver:
             for _ in range(iterations if warm is not None else 4 * iterations):  # warm: a few steps a frame suffice
                 y0 = palm_at(x)
                 J = np.stack([(palm_at(x + 1e-4 * e) - y0) / 1e-4 for e in np.eye(len(x))], axis=1)
-                reg = 0.1  # per rad: stay near the shape where the task leaves freedom
-                dx = np.linalg.solve(J.T @ J + reg * np.eye(len(x)), J.T @ (goal - y0) + reg * (shape - x))
+                # per rad: stay near the shape where the task leaves freedom. The plane of elevation is held firmly: with
+                # the arm hanging nearly straight it barely moves the hand, so a weak hold let it drift a little each
+                # frame, as far as a cross-body twist (121 degrees) where no muscle has leverage on it (the sway's strain)
+                reg = np.where(ARM_JOINTS_ARR == "elv_angle", ARM_PLANE_HOLD, 0.1)
+                dx = np.linalg.solve(J.T @ J + np.diag(reg), J.T @ (goal - y0) + reg * (shape - x))
                 x = np.clip(x + dx, lo, hi)
                 if np.abs(dx).max() < 1e-3:
                     break

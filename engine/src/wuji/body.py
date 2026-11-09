@@ -28,7 +28,8 @@ TENSION_FLOOR = 0.15  # activation a fully held region keeps (co-contraction), o
 FOOT_LIFT = 0.06  # how high a stepping foot rises (m)
 STEP_WIDE = (0.25, 0.60)  # a step landing the feet this far apart (m) sinks on the staying leg: not at all .. fully
 STEP_SINK, STEP_REACH = 55.0, 5.0  # the staying knee's bend and the reaching knee's, in the widest step (deg)
-HAND_CONTACT = 0.015  # a resting palm this close to its thigh's surface (m) is on it, and can press
+HAND_CONTACT = 0.03  # a resting palm this close to its thigh's surface (m) is on it, and can press: the fingers reach 8-10 cm
+# beyond the palm's middle, so a palm a few centimetres off still touches (the far hand at the bottom of the sway's lean)
 
 
 def _min_jerk(s: float) -> float:
