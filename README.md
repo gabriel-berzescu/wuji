@@ -36,12 +36,20 @@ the thighs, and the forces in the joint couplings, minimising the sum of squared
 criterion, and it is also qigong's *song* (松): no more effort than the posture needs. Past half its strength a muscle costs
 steeply more (Crowninshield and Brand's endurance criterion cubed muscle stress), so the load spreads before any one muscle is
 driven hard. Tension the practitioner holds raises a region's activation floor (co-contraction), and the body says what it costs
-against what the posture needs. Quiet standing comes out as it does in real bodies: the soleus working gently (about a sixth of
+against what the posture needs. Quiet standing comes out as it does in real bodies: the soleus working gently (about a tenth of
 its strength), the back nearly silent; rising onto the toes puts the calves near a quarter; a horse stance loads the
 quadriceps; one-leg standing loads the glutes; leaning on the thighs (Sway the head and shake the tail) the arms take part of
-the lower back's work. In the full forward fold the ligaments and fascia at the back of the lumbar spine carry the trunk and the
-back muscles go nearly quiet, as real backs do (flexion-relaxation); the model has no ligaments, so they are added as one
-passive element whose resistance rises steeply near the end of the lumbar range.
+the lower back's work.
+
+**What the body hangs on.** The model has no ligaments, and its muscles' own passive tension is slight, so without help the
+muscles would carry everything, even where a real body rests on its tissues. Wuji adds them as measured passive moment-angle
+relations (`engine/src/wuji/passive.py`), each felt as stretch where it is drawn long: the back of the lumbar spine (in the full
+forward fold its ligaments and fascia carry the trunk and the back muscles go nearly quiet, as real backs do: flexion-relaxation),
+the trunk's side bending and twisting (McGill et al. 1994), the hip, knee and ankle with the two-joint hamstrings and
+gastrocnemius (Riener and Edrich 1999; the stretched hamstrings hold the folded hips, the iliofemoral ligament the extended
+one; the ankle's curve at half, so that the soleus still works in quiet standing as it does in people), and the hip's side to
+side (Amankwah et al. 2004, the iliotibial band and the capsule). Each rests where a relaxed joint rests: the hip slightly
+flexed and abducted, the knee slightly bent, the foot pointed.
 
 **Strength like a person's.** Effort is a muscle's share of its strength, so the strengths have to be right. The published
 forces are uneven against people: the calves were two and a half times as strong as healthy men's, the hamstrings over three
@@ -160,7 +168,7 @@ details: environment variables, the grant, how push events wake a session.
 ## Develop
 
 ```
-cd engine && uv run pytest           # the body, the breath, the protocol, the viewer, the strengths (67 tests)
+cd engine && uv run pytest           # the body, the breath, the protocol, the viewer, the strengths (69 tests)
 cd server && npm test                # the MCPL server against a fake engine
 cd server && npm run live            # the whole chain against the real body
 ```

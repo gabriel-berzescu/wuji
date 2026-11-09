@@ -138,3 +138,27 @@ def test_swaying_the_tail_the_hands_rest_on_the_thighs_from_the_start(body):
     assert all(h["force"][2] > 5 for h in sol.hands.values())  # each palm bears something, upward on the hand
     body.intend(stance="wuji", sink=0.25, arms="hang", bend=0.0, over=3)
     settle(body, 4)
+
+
+def test_the_passive_tissues_carry_what_people_hang_on(body):
+    """Ligaments, capsules and stretched connective tissue (passive.py) carry what real bodies hang on: in quiet standing
+    the soleus works gently (as EMG has it, 5-15%), in a horse stance the shins stay quiet and the work is in the thighs,
+    and in the full fold the stretched hamstrings hold the hips, felt as stretch at the back of the thighs."""
+    from wuji.senses import region_effort
+    a = body.a
+    act = lambda s, name: s.act[a.muscles.index(name)]
+    body.reset()
+    sol = settle(body, 4.0)
+    assert 0.04 < act(sol, "soleus_r") < 0.2
+    body.intend(stance="horse", sink=0.6, arms="embrace", over=4)
+    sol = settle(body, 6.0)
+    assert act(sol, "tibant_r") < 0.2 and region_effort(sol.act, a.f0, a.muscle_region == "thighs") > 0.1
+    body.intend(stance="wuji", sink=0.1, arms="hang", over=4)
+    settle(body, 5.0)
+    body.intend(bend=1.0, over=4)
+    sol = settle(body, 5.0)
+    assert act(sol, "semimem_r") < 0.5
+    hamstrings = [f for f in body.passive_felt if f.name.endswith("hamstrings")]
+    assert all(f.moment > 10 and f.share > 0.15 for f in hamstrings)  # N m, holding each hip (folded ~60 degrees)
+    body.intend(bend=0.0, over=3)
+    settle(body, 3.5)
