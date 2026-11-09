@@ -117,11 +117,14 @@ def sway_tail() -> list[Step]:
             "say": "leaning and turning to the left, the tailbone swinging the other way"}
     right = {"side_bend": -0.8, "bend": 0.35, "twist": -0.3, "weight": 0.3, **OUT,
              "say": "leaning and turning to the right, the tailbone swinging the other way"}
-    home = {"side_bend": 0.0, "bend": 0.0, "twist": 0.0, "weight": 0.5, **IN, "say": "back to the centre"}
+    # a deep horse stance, the hands resting on the thighs above the knees and the trunk inclined a little forward to
+    # reach them (upright, the palms hang 15 cm short: they rest and bear only from about 15 degrees of incline)
+    home = {"side_bend": 0.0, "bend": 0.15, "twist": 0.0, "weight": 0.5, **IN, "say": "back to the centre"}
     return _announced("Sway the head and shake the tail: horse stance, hands on the thighs; out leaning, in returning.",
-                      _paced(_seq((6, {"stance": "horse", "sink": 0.6, "arms": "hands_thighs", **CENTRE}), (PACE, left),
+                      _paced(_seq((6, {"stance": "horse", "sink": 0.75, "arms": "hands_thighs", **CENTRE, "bend": 0.15}),
+                                  (PACE, left),
                                   (PACE, home), (PACE, right), (PACE, home), (PACE, left), (PACE, home), (PACE, right),
-                                  (PACE, home), (6, {"stance": "wuji", "sink": 0.25, "arms": "hang"}))))
+                                  (PACE, home), (6, {"stance": "wuji", "sink": 0.25, "arms": "hang", **CENTRE}))))
 
 
 def hold_feet() -> list[Step]:

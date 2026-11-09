@@ -123,3 +123,18 @@ def test_in_the_full_fold_the_back_lets_go(body):
     body.intend(bend=0.0, over=2)
     settle(body, 2.5)
     assert body.lumbar_passive() < 1  # upright, the back of the spine is slack
+
+
+def test_swaying_the_tail_the_hands_rest_on_the_thighs_from_the_start(body):
+    """The home posture of Sway the head and shake the tail: a deep horse stance, the trunk inclined a little, both palms
+    resting on the thighs and bearing some of the trunk, before any lean."""
+    from wuji.forms import sway_tail
+    first = next(a for _, op, a in sway_tail() if op == "intend")
+    body.reset()
+    settle(body, 3.5)
+    body.intend(**{k: v for k, v in first.items() if k not in ("breath", "breath_over")})
+    sol = settle(body, first["over"] + 1.5)
+    assert set(sol.hands) == {"left", "right"}
+    assert all(h["force"][2] > 5 for h in sol.hands.values())  # each palm bears something, upward on the hand
+    body.intend(stance="wuji", sink=0.25, arms="hang", bend=0.0, over=3)
+    settle(body, 4)
