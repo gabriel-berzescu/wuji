@@ -11,7 +11,8 @@ import mujoco
 import numpy as np
 
 from .anatomy import FORWARD, LEFTWARD, REGION_ORDER, REGION_WORDS
-from .body import LUMBAR_FULL, Body
+from .body import Body
+from .passive import PassiveTissues
 
 QUIET = 0.03  # a region using less than this share of its strength is quiet
 
@@ -101,9 +102,9 @@ class Senses:
         passive = np.array([-mujoco.mju_muscleBias(d.actuator_length[i], m.actuator_lengthrange[i], m.actuator_acc0[i],
                                                    m.actuator_biasprm[i, :9]) for i in range(m.nu)])
         stretch = {r: round(float(passive[a.muscle_region == r].sum() / f0[a.muscle_region == r].sum()), 4) for r in REGION_ORDER}
-        # the back of the lumbar spine, folded: its ligaments and fascia, felt as a stretch in the lower back (a tenth at
-        # full flexion, where they carry the trunk)
-        stretch["lower_back"] = round(stretch["lower_back"] + 0.1 * b.lumbar_passive() / LUMBAR_FULL, 4)
+        # the passive tissues near the end of their range (ligaments, fascia: passive.py), felt as stretch where they are
+        for r, v in PassiveTissues.stretch(b.passive_felt).items():
+            stretch[r] = round(stretch.get(r, 0.0) + v, 4)
         held = {r: v for r, v in b.tension.items() if v > 0}
         minimum = b.minimum_effort or s.effort or 1e-9
         ratio = s.effort / max(minimum, 1e-9)
