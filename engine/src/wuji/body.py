@@ -26,6 +26,8 @@ PAB_REST = 8.0
 
 TENSION_FLOOR = 0.15  # activation a fully held region keeps (co-contraction), on top of what the posture needs
 FOOT_LIFT = 0.06  # how high a stepping foot rises (m)
+STEP_WIDE = (0.25, 0.60)  # a step landing the feet this far apart (m) sinks on the staying leg: not at all .. fully
+STEP_SINK, STEP_REACH = 55.0, 5.0  # the staying knee's bend and the reaching knee's, in the widest step (deg)
 HAND_CONTACT = 0.015  # a resting palm this close to its thigh's surface (m) is on it, and can press
 
 
@@ -115,9 +117,13 @@ class Body:
         self.segments.clear()
         t = self.t
         if target.stance != self.posture.stance:
-            new_feet = self.posture_solver.feet_for(target.stance)
-            # step the left foot first, then the right: each step shifts the weight away, lifts, places, returns; then
-            # the body settles into the new stance. The steps share 75% of the time asked for, the settling the rest.
+            # as Ba Duan Jin steps: the left foot alone steps out to the new width (or back in), the right staying where
+            # it is, and the body settles between the feet. (Stepping both feet out made the second step a one-legged
+            # lunge, the body's weight over a foot already 30 cm out to the side: more than muscles and floor could hold.)
+            # The step shifts the weight onto the right foot, lifts, places, comes back: 75% of the time asked for, the
+            # settling the rest.
+            width = 2 * STANCES[target.stance]["half_width"]
+            new_feet = {"right": start["feet"]["right"], "left": start["feet"]["right"] + width}
             steps = [s for s in ("left", "right") if abs(new_feet[s] - start["feet"][s]) >= 1e-3]
             feet = dict(start["feet"])
             pose = start
@@ -189,19 +195,31 @@ class Body:
         s = (t - seg.t0) / seg.duration
         if seg.step_foot is None:
             return _blend(seg.start, seg.end, _min_jerk(s))
-        # a step: weight off the stepping foot (0-35%), the foot travels in an arc (35-65%), weight back (65-100%)
+        # a step: weight off the stepping foot (0-35%), the foot travels in an arc (35-65%), weight back (65-100%). A wide
+        # step sinks on the staying leg and reaches out with the stepping one nearly straight, as a person steps out into
+        # a horse stance: otherwise the reaching foot is beyond the leg's length while the weight is over the other foot.
         side = seg.step_foot
+        other = "right" if side == "left" else "left"
+        span = max(abs(seg.end["feet"][side] - seg.start["feet"][other]),  # the feet's distance as the step lands,
+                   abs(seg.start["feet"][side] - seg.start["feet"][other]))  # or as it lifts off (stepping back in)
+        wide = float(np.clip((span - STEP_WIDE[0]) / (STEP_WIDE[1] - STEP_WIDE[0]), 0.0, 1.0))
+        knee0 = seg.start["knee"]
+        reaching = {other: knee0 + wide * max(0.0, STEP_SINK - knee0), side: knee0 + wide * (STEP_REACH - knee0)}
         off = {**seg.start, "weight": 0.0 if side == "left" else 1.0}
         if s < 0.35:
-            return _blend(seg.start, off, _min_jerk(s / 0.35))
+            u = _min_jerk(s / 0.35)
+            pose = _blend(seg.start, off, u)
+            return {**pose, "knees": {k: knee0 + u * (v - knee0) for k, v in reaching.items()}}
         if s < 0.65:
             u = _min_jerk((s - 0.35) / 0.3)
-            pose = {**off, "feet": dict(seg.start["feet"]), "lift": {"left": 0.0, "right": 0.0}}
+            pose = {**off, "feet": dict(seg.start["feet"]), "lift": {"left": 0.0, "right": 0.0}, "knees": reaching}
             pose["feet"][side] = seg.start["feet"][side] + u * (seg.end["feet"][side] - seg.start["feet"][side])
             pose["lift"][side] = FOOT_LIFT * np.sin(np.pi * u)
             return pose
         landed = {**off, "feet": dict(seg.end["feet"])}
-        return _blend(landed, seg.end, _min_jerk((s - 0.65) / 0.35))
+        u = _min_jerk((s - 0.65) / 0.35)
+        pose = _blend(landed, seg.end, u)
+        return {**pose, "knees": {k: v + u * (seg.end["knee"] - v) for k, v in reaching.items()}}
 
     @property
     def moving(self) -> bool:
@@ -224,7 +242,7 @@ class Body:
                                            arms=pose["arms_l"], arms_right=pose["arms_r"], iterations=6, sway=sway,
                                            tilt_deg=pose["tilt"], rise_deg=pose["rise"],
                                            trunk={"bend": pose["bend"], "twist": pose["twist"], "side": pose["side"]},
-                                           rest=pose["rest"])
+                                           rest=pose["rest"], knees=pose.get("knees"))
         tiptoe = pose["rise"] > 3.0
         self.loaded = {s: (False if pose["lift"][s] >= 0.005 else "forefoot" if tiptoe else True) for s in ("left", "right")}
         self.hands = self._hands_on_thighs(pose)

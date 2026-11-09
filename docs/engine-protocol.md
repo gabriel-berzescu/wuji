@@ -99,8 +99,11 @@ Where the body should go, and how fast. Every field is optional; a field left ou
 }
 ```
 
+- `stance`: `wuji` (feet hip-width) or `horse` (ma bu: the feet about 60 cm apart). Changing it is a real step: the
+  left foot alone steps out (or in), the right stays, and the body settles between the feet.
 - `weight`: the share on the **left** foot, 0..1 (0.5 is centred).
-- `sink`: how deep the knees bend, 0 (straight) .. 1 (the deepest the stance allows).
+- `sink`: how deep the knees bend, 0 (straight) .. 1 (the deepest the stance allows: 45 degrees in wuji, 60 in horse,
+  where at 0.75 the knees reach the toes).
 - `arms` sets both arms (and clears a one-arm shape); `arm_left` / `arm_right` set one arm alone.
 - `breath`: breath-led movement. That phase of the breath begins now, with the movement, and lasts `over` seconds, as deep
   as the pace needs; between cues the breath keeps that pace. The forms cue every movement. `breath_over`: how long the
@@ -139,8 +142,8 @@ what the posture needs. Regions: `feet`, `calves`, `thighs`, `hips`, `lower_back
 zhuang), the Eight Brocades one by one (`lift_sky`, `draw_bow`, `separate`, `owl`, `sway_tail`, `hold_feet`, `fists`,
 `bounce`), or `ba_duan_jin`, all eight in order (about five and a half minutes). → `{"accepted": true, "steps": 4, "text":
 "..."}`. Progress arrives as `form` events: each part announced as it begins, then each movement with its breath
-(`"Out, drawing the bow to the left, the eyes on the raised finger."`), 66 in the Eight Brocades. A movement calls halfway
-through, when it is under way, so the felt sense that comes with the call is the movement's own.
+(`"Out, drawing the bow to the left, the eyes on the raised finger."`), 66 in the Eight Brocades. A movement calls three
+quarters of the way through, near its fullest, so the felt sense that comes with the call is the movement's own.
 
 ### `reset`
 

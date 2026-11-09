@@ -17,9 +17,13 @@ from .anatomy import FORWARD, LEFTWARD, UP, Anatomy
 DEG = np.pi / 180
 
 STANCES = {
-    # half the distance between the feet's centres (m), the deepest knee bend at sink 1 (deg), how far the toes turn out (deg)
+    # half the distance between the feet's centres (m), the deepest knee bend at sink 1 (deg)
     "wuji": {"half_width": 0.085, "max_knee": 45.0},
-    "horse": {"half_width": 0.20, "max_knee": 75.0},
+    # the horse stance (ma bu) is wide, the feet two to three foot-lengths apart (Health Qigong's Ba Duan Jin), and takes its
+    # depth from the width more than from the knees: at sink 0.75 the knees reach the toes and go no further, the shins
+    # leaning about 26 degrees, the trunk upright (was 40 cm and 75 degrees: deep sinks sent the knees 3 cm past the toes
+    # and the ankles to the end of their range)
+    "horse": {"half_width": 0.30, "max_knee": 60.0},
 }
 
 # Arm shapes: shoulder elevation, plane of elevation (0 out to the side, 90 forward), rotation, elbow flexion, forearm
@@ -172,14 +176,15 @@ class PostureSolver:
     def solve(self, posture: Posture, feet: dict | None = None, iterations: int = 30, sway: np.ndarray | None = None,
               lift: dict | None = None, knee_deg: float | None = None, arms: dict | None = None,
               tilt_deg: float | None = None, arms_right: dict | None = None, trunk: dict | None = None,
-              rise_deg: float = 0.0, rest: dict | None = None) -> np.ndarray:
+              rise_deg: float = 0.0, rest: dict | None = None, knees: dict | None = None) -> np.ndarray:
         """Joint angles (qpos) for a posture, warm-started from the last solution.
 
         feet: sideways foot positions (default: the stance's); lift: how high each foot is raised (stepping); knee_deg: the
         knee bend (default: from sink and the stance); arms: explicit arm angles (default: the posture's arm shape), for
         the left arm too when arms_right is given; trunk: {"bend", "twist", "side"} in degrees; rise_deg: heels raised;
         rest: side -> 0..1, how far each hand has gone onto its thigh (default, when the arms come from the posture: 1
-        for an arm in hands_thighs).
+        for an arm in hands_thighs); knees: "left"/"right" -> that knee's bend (deg) instead of knee_deg (a step: the
+        staying leg sinks, the stepping leg reaches out nearly straight).
         """
         m, d, a = self.m, self.d, self.a
         stance = STANCES[posture.stance]
@@ -230,7 +235,8 @@ class PostureSolver:
             for side in ("r", "l"):
                 row = np.zeros(m.nv)
                 row[a.dadr["knee_angle_" + side]] = 1.0
-                task(row, knee - q[a.qadr["knee_angle_" + side]], 10.0)
+                bend_here = (knees or {}).get("left" if side == "l" else "right", knee / DEG) * DEG
+                task(row, bend_here - q[a.qadr["knee_angle_" + side]], 10.0)
             # everything else stays near standing, gently
             reg = np.zeros((len(self.dofs) - 6, m.nv))
             e = np.zeros(len(self.dofs) - 6)

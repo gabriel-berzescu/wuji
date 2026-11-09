@@ -4,6 +4,7 @@ import pytest
 
 from wuji.anatomy import REGION_ORDER
 from wuji.body import Body
+from wuji.posture import STANCES
 from wuji.senses import Senses, region_effort
 
 
@@ -72,13 +73,15 @@ def test_stepping_into_horse_lifts_each_foot_and_lands_wider(body):
                 if not body.loaded[side]:
                     assert side not in sol.grf  # a lifted foot carries nothing
                     unloaded.add(side)
-    assert lifted == {"left", "right"} and unloaded == {"left", "right"}
+    # as Ba Duan Jin steps: the left foot alone steps out the whole width, the right stays, the body settles between
+    assert lifted == {"left"} and unloaded == {"left"}
     feet = body.current["feet"]
-    assert feet["left"] - feet["right"] == pytest.approx(0.40, abs=0.01)
+    assert feet["left"] - feet["right"] == pytest.approx(2 * STANCES["horse"]["half_width"], abs=0.01)
+    assert feet["right"] == pytest.approx(-STANCES["wuji"]["half_width"], abs=1e-6)
     sol = settle(body, 2.0)
     assert share_left(sol) == pytest.approx(0.5, abs=0.12)
     knee = np.degrees(body.q[body.a.qadr["knee_angle_r"]])
-    assert knee > 30  # a horse stance sits low
+    assert knee > 25  # a horse stance sits low (and wide)
 
 
 def test_held_tension_costs_more_than_the_posture_needs(body):

@@ -4,8 +4,9 @@ Each step is (seconds after the form begins, operation, arguments), the operatio
 breathe, tension), "announce" {"text"}: what the form says as a brocade begins, or "say" {"text", "breath"}: what a
 movement is. The engine calls the practitioner with each, a movement's joined to its breath ("In, the arms rise to hold up
 the heavens."), so someone woken by the form's signals is present at every movement (Gabriel: "87 events is not too much
-... all things must pass"). A movement speaks halfway through, when it is under way, so the felt sense that comes with the
-call is the movement's own, not where the last one ended.
+... all things must pass"). A movement speaks three quarters of the way through, near its fullest (the arms almost
+overhead, the fold near its bottom), so the felt sense that comes with the call is the movement's own, not where the last
+one ended (at the start it was that; halfway, it missed the fold's bottom, where the back lets go).
 
 The breath leads the movement: each movement carries its breath phase ("breath": "inhale" | "exhale"), which begins with
 it and lasts its slot: in while rising or opening, out while sinking, closing, or putting out force (the bow drawn, the
@@ -30,7 +31,7 @@ Step = tuple[float, str, dict]
 PACE = 4.0  # seconds per half-breath in the brocades: in for 4, out for 4
 
 
-SPEAK = 0.5  # a movement speaks this far through itself: under way, the body already in it
+SPEAK = 0.75  # a movement speaks this far through itself: near its fullest (Gabriel: "move the calls to 3/4")
 
 
 def _seq(*moves: tuple[float, dict]) -> list[Step]:

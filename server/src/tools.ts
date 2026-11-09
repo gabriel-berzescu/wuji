@@ -37,7 +37,7 @@ export const TOOLS: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        stance: { type: 'string', enum: ['wuji', 'horse'], description: 'The stance of the legs: wuji (feet hip-width) or horse (wide, low); changing it is a real step.' },
+        stance: { type: 'string', enum: ['wuji', 'horse'], description: 'The stance of the legs: wuji (feet hip-width) or horse (ma bu: wide, about 60 cm, low); changing it is a real step, the left foot stepping out or in.' },
         weight: unit('Share of the weight on the LEFT foot, 0..1; 0.5 is centred.'),
         sink: unit('How deep the knees bend: 0 straight .. 1 the deepest this stance allows.'),
         arms: { type: 'string', enum: ARM_SHAPES, description: 'What both arms do (clears a one-arm shape unless arm_left/arm_right is given too).' },

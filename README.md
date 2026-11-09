@@ -28,7 +28,10 @@ longissimus, iliocostalis, quadratus lumborum, psoas), both arms and hands down 
 
 **Moving by intention.** An intention (stance, weight, sink, arm shape) becomes a smooth movement. Inverse kinematics places the
 bones: the feet stay planted, the pelvis and chest stay level and upright, the centre of mass rests where the weight is asked to
-be. A change of stance is a real step: the weight goes onto one leg, the other foot lifts, travels and lands.
+be. A change of stance is a real step, as Ba Duan Jin steps: the weight goes onto the right leg, the left foot lifts, travels
+and lands, and the body settles between the feet. A wide step sinks on the staying leg and reaches out with the stepping one
+nearly straight. The horse stance (ma bu) is wide, the feet about 60 cm apart (two to three foot-lengths), and takes its depth
+from the width: the knees reach the toes and go no further.
 
 **Who does the work.** Several times a second, inverse dynamics gives the forces the movement needs, and a quadratic programme
 finds the activations of all 416 muscles, the ground's force under each sole, the force through each palm when the hands rest on
